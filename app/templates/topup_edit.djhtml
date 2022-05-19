@@ -1,0 +1,122 @@
+{%set modal_size="modal-md"%}
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="topupForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="topupModalLabel">Add Topup</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            {{ form.csrf_token() }}
+            {{ render_field(form.is_company, type="select") }}
+            {{ render_field(form.account_id, type="select") }}
+            {{ render_field(form.topup_type_id, type="select") }}
+            {{ render_field(form.credits) }}
+            {{ render_field(form.notes) }}
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='plugins/jquery-chained/jquery.chained.min.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     var target = document.querySelector("#ajax-modal");
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+
+     var _handleTopupActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#topupForm'),
+             {
+                 fields: {
+                     account_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select an account'
+                             },
+                         }
+                     },
+                     credits: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Credits are required'
+                             },
+                             greaterThan: {
+                                 message: 'The value must be greater than 0',
+                                 min: 1,
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             var data = $("#topupForm").serialize();
+
+             blockModal.block();
+
+             $.post("{{ url_for('base.topupAdd') }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     swal.fire({
+                         text: "Successfully saved topup",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     TopupTable.reload();
+                     $('#ajax-modal').modal('hide');
+                     blockModal.destroy();
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     };
+
+     // Class Definition
+     var Topup = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleTopupActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         $("#account_id").chained("#is_company");
+
+         Topup.init();
+     });
+    </script>
+{% endblock %}

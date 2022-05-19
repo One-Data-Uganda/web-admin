@@ -1,0 +1,26 @@
+<html>
+    <body>
+        <p>Dear {{ name }},</p>
+        <p>
+            You recently registered for, or an account was created for you, on the Uganda Securities Exchange Easy Portal Mobile Application.
+        </p>
+        <p></p>
+        <p>
+            Please use the code below to verify your registration
+        </p>
+        <p>
+            <font style="font-weight:bold; font-size:20pt">{{ code }}</font>
+        </p>
+        <p>
+            Please note that this code expires after 30 minutes, then you will have to register again.
+        </p>
+        <p></p>
+        <p>
+            After verification, you will be able to login to the app using your supplied credentials.
+        </p>
+        <p>
+            Regards,<br>
+            USE Easy Portal
+        </p>
+    </body>
+</html>

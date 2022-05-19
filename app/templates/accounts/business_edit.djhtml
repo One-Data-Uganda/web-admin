@@ -1,0 +1,201 @@
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="accountForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="accountModalLabel">Add/Edit Account</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            {{ form.csrf_token() }}
+            {{ form.id }}
+            <div class="form-body">
+                {{ render_field(form.business_name) }}
+                {{ render_field(form.address) }}
+                <div class="form-group row mb-3">
+                    <label for="{{ form.country_id.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.country_id) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ form.country_id(class="form-select form-select-sm ", data_control="select2", data_placeholder="Select Country", data_dropdown_parent="#ajax-modal") }}
+                    </div>
+                    <label for="{{ form.msisdn_1.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.msisdn_1) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ render_simple_field(form.msisdn_1) }}
+                    </div>
+                </div>
+                {{ render_field(form.email_1) }}
+                <div class="form-group row mb-3">
+                    <label for="{{ form.tin.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.tin) }}
+                    </label>
+                    <div class="col-md-4">
+                        {{ render_simple_field(form.tin) }}
+                    </div>
+                </div>
+                <div class="form-group row mb-3">
+                    <label for="{{ form.billing_id.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.billing_id) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ render_simple_field(form.billing_id, type="select")}}
+                    </div>
+                    <label for="{{ form.active.name }}" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.active) }}
+                    </label>
+                    <div class="col-md-4">
+                        {{ render_simple_field(form.active, type="radio") }}
+                    </div>
+                </div>
+                <div class="form-group row mb-3">
+                    <label for="{{ form.warning_level.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.warning_level) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ render_simple_field(form.warning_level)}}
+                    </div>
+                </div>
+                {{ render_field(form.warning_email) }}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-sm btn-primary font-weight-bold" id="save-account">Save changes</button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+
+     var extraButtons;
+     var validation;
+     var target = document.querySelector("#ajax-modal");
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+
+     var _handleAccountActions = function() {
+         // Init form validation rules. For more info check the FormValidation plugin's official documentation:https://formvalidation.io/
+         validation = FormValidation.formValidation(
+             document.querySelector('#accountForm'),
+             {
+                 fields: {
+                     business_name: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Name is required'
+                             },
+                         }
+                     },
+                     address: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Address is required'
+                             },
+                         }
+                     },
+                     tin: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Tax identification Number is required'
+                             },
+                         }
+                     },
+                     country_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a country'
+                             },
+                         }
+                     },
+                     msisdn_1: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a telephone number'
+                             },
+                         }
+                     },
+                     email_1: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter an email address'
+                             },
+                         }
+                     },
+                     billing_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a billing plan'
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     // defaultSubmit: new FormValidation.plugins.DefaultSubmit(), // Uncomment this line to enable normal button submit after form validation
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockModal.block();
+
+             var data = $("#accountForm").serialize();
+
+             $.post("{{ url_for('accounts.businessEdit') }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     swal.fire({
+                         text: "Successfully saved account",
+                         icon: "success",
+                         buttonsStyling: false,
+                                 confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     $("#account-reset").trigger("click");
+                     $('#ajax-modal').modal('hide')
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var Account = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleAccountActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         Account.init();
+
+         $("#active-{{form.active.data}}").click();
+     });
+    </script>
+{% endblock %}

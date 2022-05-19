@@ -1,0 +1,19 @@
+<style type="text/css">
+ .modal {
+     position: fixed !important;
+ }
+ .table-sm>:not(caption)>*>* {
+     padding: 0.25rem 0.25rem !important;
+ }
+</style>
+{% if modal_size is not defined %}
+    {% set modal_size = "modal-lg" %}
+{% endif %}
+{% block additionalstyles %}{% endblock %}
+<div class="modal-dialog {{ modal_size }}" role="document">
+    <div class="modal-content">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/sms-fns.js', v='1.0.2') }}" type="text/javascript"></script>
+{% block additionalscripts %}{% endblock %}

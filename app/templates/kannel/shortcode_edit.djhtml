@@ -1,0 +1,128 @@
+{%set modal_size = "modal-md"%}
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="shortcodeForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="shortcodeModalLabel">Add Shortcode</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            {{ form.csrf_token() }}
+            <div class="form-body">
+                <div class="form-group row">
+                    <label for="id" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.id) }}
+                    </label>
+                    <div class="col-md-9">
+                        {% if form.id.data is none %}
+                            {{ render_simple_field(form.id)}}
+                        {% else %}
+                            <input type="hidden" name="id" id="id" value="{{ form.id.data}}">
+                            {{ form.id.data }}
+                        {% endif %}
+                    </div>
+                </div>
+                {{ render_field(form.smsc_id) }}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+     var target = document.querySelector('#ajax-modal');
+
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+
+     var _handleShortcodeActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#shortcodeForm'),
+             {
+                 fields: {
+                     smsc_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                     id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockModal.block();
+
+             var data = $("#shortcodeForm").serialize();
+             $.post("{{ url_for('.shortcodeEdit', id=form.id.data) }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     $("#shortcodeCard").load("{{ url_for('.general') }} #shortcodeCard", function(){
+                         ShortcodeTable.init();
+                     });
+                     swal.fire({
+                         text: "Successfully saved shortcode",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+
+                     $('#ajax-modal').modal('hide')
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var Shortcode = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleShortcodeActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         Shortcode.init();
+     });
+    </script>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% set modal_size="modal-md" %}
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="billingForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="billingModalLabel">ADD/EDIT COST</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body py-0">
+            {{ form.csrf_token() }}
+            {{ form.id }}
+            {{ form.billing_id }}
+            {{ render_field(form.name, label_size=4) }}
+            <div class="form-group row mb-3 " id="{{ form.country_id.name}}_Div">
+                <label for="country_id" class="col-md-4 col-form-label font-weight-bolder ">
+                    {{ render_label(form.country_id) }}{% if form.country_id.required %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                <div class="col-md-8">
+                    {{ form.country_id(class="form-select form-select-sm", data_control="select2", data_dropdown_parent="#ajax-modal", data_placeholder="Select a country") }}
+                </div>
+            </div>
+            {{ render_field(form.prefixes, label_size=4) }}
+            {{ render_field(form.network_id, type="select", label_size=4) }}
+            {{ render_field(form.cost, label_size=4) }}
+            <small><em>&sup1;NOTE: These fields are ignored for the name "OTHER"</em></small>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+     var target = document.querySelector("#ajax-modal");
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+
+     var _handleBillingActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#billingForm'),
+             {
+                 fields: {
+                     name: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Date is required'
+                             },
+                         }
+                     },
+                     network_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a network'
+                             },
+                         }
+                     },
+                     country_id: {
+                         validators: {
+                             callback: {
+                                 message: 'Please select a country',
+                                 callback: function(input) {
+                                     return $("#name").val() === "OTHER" || input.value !== '';
+                                 }
+                             },
+                         }
+                     },
+                     prefixes: {
+                         validators: {
+                             callback: {
+                                 message: 'Please provide prefixes',
+                                 callback: function(input) {
+                                     return $("#name").val() === "OTHER" || input.value !== '';
+                                 }
+                             },
+                         }
+                     },
+                     cost: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Cost is required'
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockModal.block();
+
+             var data = $("#billingForm").serialize();
+             $.post("{{ url_for('base.networkCostEdit', billing_id=form.billing_id.data, id=form.id.data) }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     swal.fire({
+                         text: "Successfully saved host",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     $("#billingNetworkCard").load("{{ url_for('base.billing', id=form.billing_id.data) }} #billingNetworkCard", function(){
+                         initFns.init();
+                     });
+                     $('#ajax-modal').modal('hide');
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var Billing = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleBillingActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         Billing.init();
+     });
+    </script>
+{% endblock %}

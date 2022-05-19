@@ -1,0 +1,212 @@
+{% set modal_size = "modal-xl"%}
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="hostForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="hostModalLabel">Edit Host</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body ">
+            {{ form.csrf_token() }}
+            {{ form.id }}
+            <div class="row ">
+                <div class="col-6">
+                    <div class="card shadow-sm card-custom shadow-sm card-stretch ">
+                        <div class="card-header">
+                            <div class="card-title fw-bold">
+                                <h3 class="card-label">SMSC Identification</h3>
+                            </div>
+                        </div>
+                        <!--begin::Body-->
+                        <div class="card-body py-2 ">
+                            {{ render_field(form.name, label_size=3) }}
+                            {{ render_field(form.smsc_type, label_size=3, type="select") }}
+                            {{ render_field(form.host, label_size=3) }}
+                            {{ render_field(form.port, label_size=3) }}
+                            {{ render_field(form.receive_port, label_size=3) }}
+                            <div class="form-group row mt-2">
+                                {{ form.transceiver_mode.label(class="col-md-4 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ render_simple_field(form.transceiver_mode, type="switch") }}
+                                </div>
+                                {{ form.use_ssl.label(class="col-md-2 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ render_simple_field(form.use_ssl, type="switch") }}
+                                </div>
+                            </div>
+                            {{ render_field(form.username, label_size=3) }}
+                            {{ render_field(form.password, label_size=3) }}
+                            {{ render_field(form.system_type, label_size=3) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card shadow-sm card-custom shadow-sm card-half-stretch">
+                        <div class="card-header">
+                            <div class="card-title fw-bold">
+                                <h3 class="card-label">Permissions</h3>
+                            </div>
+                        </div>
+                        <!--begin::Body-->
+                        <div class="card-body  py-2">
+                            {{ render_field(form.allowed_prefix, label_size=3) }}
+                            {{ render_field(form.denied_prefix, label_size=3) }}
+                            {{ render_field(form.allowed_smsc_id, label_size=3) }}
+                            {{ render_field(form.denied_smsc_id, label_size=3) }}
+                        </div>
+                    </div>
+                    <div class="card shadow-sm card-custom shadow-sm card-half-stretch ">
+                        <div class="card-header">
+                            <div class="card-title fw-bold">
+                                <h3 class="card-label">Technical Details</h3>
+                            </div>
+                        </div>
+                        <!--begin::Body-->
+                        <div class="card-body  py-2">
+                            <div class="form-group row mt-2">
+                                {{ form.source_ton.label(class="col-md-4 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ form.source_ton(class="form-control form-control-sm") }}
+                                </div>
+                                {{ form.source_npi.label(class="col-md-2 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ form.source_npi(class="form-control form-control-sm") }}
+                                </div>
+                            </div>
+                            <div class="form-group row mt-2">
+                                {{ form.dest_ton.label(class="col-md-4 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ form.dest_ton(class="form-control form-control-sm") }}
+                                </div>
+                                {{ form.dest_npi.label(class="col-md-2 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ form.dest_npi(class="form-control form-control-sm") }}
+                                </div>
+                            </div>
+                            <div class="form-group row mt-2">
+                                {{ form.wait_ack.label(class="col-md-4 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ form.wait_ack(class="form-control form-control-sm") }}
+                                </div>
+                                {{ form.log_level.label(class="col-md-2 text-right col-form-label font-weight-bolder") }}
+                                <div class="col-md-3">
+                                    {{ form.log_level(class="form-control form-control-sm") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+     var target = document.querySelector('#ajax-modal');
+
+     var blockUI;
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+
+     var _handleHostActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#hostForm'),
+             {
+                 fields: {
+                     fdate: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Date is required'
+                             },
+                         }
+                     },
+                     network_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a network'
+                             },
+                         }
+                     },
+                     notes: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter the date of birth'
+                             },
+                         }
+                     },
+                     amount: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Amount is required'
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockUI.block();
+
+             var data = $("#hostForm").serialize();
+             $.post("{{ url_for('kannel.hostEdit', network_id=form.network_id.data, id=form.id.data) }}", data, function(r, s) {
+                 blockUI.release();
+                 if (r.success) {
+                     swal.fire({
+                         text: "Successfully saved host",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     $("#networkCard").load("{{ url_for('kannel.smpp', id=form.network_id.data) }} #networkCard");
+                     $('#ajax-modal').modal('hide');
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var Host = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleHostActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         Host.init();
+     });
+    </script>
+{% endblock %}

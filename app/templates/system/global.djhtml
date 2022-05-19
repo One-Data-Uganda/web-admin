@@ -1,0 +1,64 @@
+{% set title = "Global Settings" %}
+{% extends "layout.djhtml" %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-6">
+            <div class="card shadow-sm card-custom gutter-b card-stretch shadow-sm">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3 class="card-label">Terms & Conditions</h3>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="global" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="form-body">
+                            {% with messages = get_flashed_messages(with_categories=True) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }}">
+                                            <button class="btn-close" data-close="alert"></button>
+                                            {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+                            {% for r in global_settings %}
+                                <div class="form-group row mb-4" id="{{ r }}_Div">
+                                    <label for="{{ r }}" class="col-md-3 col-form-label font-weight-bolder ">
+                                        {{ settingsDict[r].name }}
+                                    </label>
+                                    <div class="col-md-8">
+                                        <input type="text" class="form-control form-control-sm" name="{{ r }}" value="{{ settingsDict[r].value }}">
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-footer">
+                            <div class="col-12 text-end">
+                                <input type="submit" value="Save Changes" class="btn btn-primary">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/tinymce/tinymce.bundle.js') }}"></script>
+    <script>
+     $(document).ready(function(){
+         tinymce.init({
+             selector: ".tinymce",
+             menubar: false,
+             toolbar: ["styleselect fontselect fontsizeselect",
+                       "undo redo | cut copy paste | bold italic | link image | alignleft aligncenter alignright alignjustify | fullscreen",
+                       "bullist numlist | outdent indent | blockquote subscript superscript | advlist | autolink | lists charmap | print preview |  code"],
+             plugins : "advlist autolink link image lists charmap print preview code"
+         });
+     });
+    </script>
+{% endblock %}

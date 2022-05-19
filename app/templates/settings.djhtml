@@ -1,0 +1,93 @@
+{% extends "layout.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-6">
+            <form id="settingForm" method="POST">
+                <div class="card shadow-sm card-custom gutter-b card-stretch" id="settingCard">
+                    <div class="card-header">
+                        <div class="card-title fw-bold">
+                            <h3 class="card-label">
+                                SMTP SETTINGS MANAGEMENT
+                            </h3>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% for setting in settings %}
+                            <div class="form-group row">
+                                <label for="{{ setting.id }}" class="col-md-4 text-right col-form-label font-weight-bolder ">
+                                    {{ setting.name }}
+                                </label>
+                                <div class="col-md-8">
+                                    {% if setting.type == "int" %}
+                                        <input id="{{ setting.id }}" class="form-control" name="{{ setting.id }}" value="{{ setting.value }}">
+                                    {% elif setting.type == "text" %}
+                                        <input id="{{ setting.id }}" class="form-control" name="{{ setting.id }}" value="{{ setting.value }}">
+                                    {% else %}
+                                        {% set types = setting.type.split(',') %}
+                                        <select class="form-control" id="{{ setting.id }}" name="{{ setting.id}}" value="{{ setting.value}}">
+                                            {% for t in types %}
+                                                <option value="{{ t }}" {% if t == setting.value %} selected{% endif %}>{{ t | upper}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer text-right">
+                        <input type="submit" class="btn btn-sm btn-primary font-weight-bold" name="save" value="Save Settings">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+
+     var _handleSettingActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#settingForm'),
+             {
+                 fields: {
+                     {% for setting in settings %}
+                     {{ setting.id }}: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'This field is required'
+                             },
+                         }
+                     },
+                     {% endfor %}
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     defaultSubmit: new FormValidation.plugins.DefaultSubmit(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         });
+     }
+
+     // Class Definition
+     var Setting = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleSettingActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         Setting.init();
+     });
+    </script>
+{% endblock %}

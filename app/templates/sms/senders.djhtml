@@ -1,0 +1,397 @@
+{% set title = "Sender ID Management" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="senderCard">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3 class="card-label">{{ title }}</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="#" data-url="{{ url_for('sms.senderEdit') }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                            <i class="flaticon2-plus"></i> Assign New Sender
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body" id="contactSenderCard">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <button class="btn-close" data-close="alert"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <table id="senderTable" class="table table-darker align-middle table-sm table-bordered table-striped gx-4">
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/jquery-chained/jquery.chained.js', v='1.0.2') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     var target = document.querySelector('#senderCard');
+
+     var blockUI;
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+
+     var _SenderAction = function(data){
+         $.post("{{ url_for('sms.senderAction')}}", data, function(r){
+             blockUI.release();
+             if (r.success) {
+                 SenderTable.reload();
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         });
+     };
+
+     var approveSender = function(id) {
+         blockUI.block();
+         var data = {
+             "action": 'approve',
+             "id": id
+         };
+         _SenderAction(data);
+     }
+
+     var deleteSender = function(id) {
+         bootbox.confirm("Are you sure you want to remove this sender? This is not reversible.", function(result) {
+             if (result) {
+                 blockUI.block();
+                 var data = {
+                     "action": "delete",
+                     "id": id
+                 };
+                 _SenderAction(data);
+             }
+         });
+     };
+
+     var rejectSender = function(id) {
+         bootbox.prompt({
+             title: "Please enter a reason for this rejection",
+             inputType: "text",
+             required: true,
+             callback: function(d){
+                 if(d) {
+                     var data = {
+                         id: id,
+                         action: "reject",
+                         reason: d
+                     };
+                     _SenderAction(data);
+                 }
+             }
+         });
+     };
+
+
+     var disableSender = function(id) {
+         bootbox.confirm("Are you sure you want to disable this sender? Clients will no longer be able to use it.", function(result) {
+             if (result) {
+                 blockUI.block();
+                 var data = {
+                     "action": 'disable',
+                     "id": id
+                 }
+                 _SenderAction(data);
+             }
+         });
+     }
+
+
+     var SenderTable = function() {
+         var table;
+
+         var reloadTable = function() {
+             table.ajax.reload();
+         };
+         var initTable = function() {
+             $.fn.dataTable.Api.register('column().title()', function() {
+                 return $(this.header()).text().trim();
+             });
+             table = $("#senderTable").DataTable({
+                 "destroy": true,
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": true,
+                 "processing": true,
+                 language: datatablesLanguage,
+
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 //set the initial value
+                 "ajax": {
+                     "url": "{{ url_for('.senderJSON') }}", // ajax source
+                     "type": "POST",
+                 },
+                 "columns": [
+                     { "data": "date_submitted", "title": "Date Submitted", type: "date",
+                       width: 200,
+                       render: function(d) {
+                           return moment(d).format('YYYY-MM-DD hh:mm:ss A');
+                       }
+                     },
+                     { "data": "account_id", title: "Account",
+                       width: 250,
+                       render: function(v, t, r) {
+                           return r['account'];
+                       }
+                     },
+                     { "data": "sender_id", title: "Sender ID",
+                       width: 100
+                     },
+                     {"data": "status", "title": "Status",
+                      width: 100,
+                      render: function (v) {
+                          if (v == 0) {
+                              return '<label class="badge badge-sm badge-warning">Pending</label>';
+                          } else if (v == 1) {
+                              return '<label class="badge badge-sm badge-success">Approved</label>';
+                          } else {
+                              return '<label class="badge badge-sm badge-danger">Rejected</label>';
+                          }
+                      }
+                     },
+                     {"data": "last_action", "title": "Last Action",
+                      width: 200,
+                      render: function(d) {
+                          if (d) {
+                              return moment(d, ["'YYYY-MM-DD hh:mm:ss", "YYYY-MM-DD hh:mm:ss.SSSSSS"]).format('YYYY-MM-DD hh:mm:ss A');
+                          } else {
+                              return "";
+                          }
+                      }
+                     },
+                     {"data": "reason", "title": "Reason"},
+                     {data: "id", title: "Actions",
+                      width: 150,
+                      class: "text-center",
+                      render: function (v, t, r) {
+                          var x="";
+                          if (r['status'] == 0 || r['status'] == 2) {
+                              x += `<button onclick="approveSender(` + v + `)" class="btn btn-sm btn-success me-2">
+                                <span class="navi-icon"><i class="fas fa-check"></i></span>
+                                <span class="navi-text">Approve</span>
+                            </button>`;
+                          } else if (r['status'] == 0 || r['status'] == 1) {
+                              x += `<button onclick="rejectSender(` + v + `)" class="btn btn-sm btn-danger me-2">
+                                <span class="navi-icon"><i class="fas fa-times-circle"></i></span>
+                                <span class="navi-text">
+                                    Reject
+                                </span>
+                            </button>`;
+                          }
+                          return x;
+                      }
+                     },
+                 ],
+
+                 dom: datatablesDom,
+                 initComplete: function() {
+                     var thisTable = this;
+                     var rowFilter = $('<tr class="filter align-top"></tr>').appendTo($(table.table().header()));
+
+                     this.api().columns().every(function() {
+                         var column = this;
+                         var input;
+
+                         switch (column.title()) {
+                             case 'Date Submitted':
+                                 input = $(`
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="From" id="date_from"
+                                     data-col-index="` + column.index() + `"/>
+                                        <span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="To" id="date_to"
+                                     data-col-index="` + column.index() + `"/>
+                                        <span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                                </div>`);
+                                 break;
+                             case 'Status':
+                                 input = $(`<select id="filter_status" name="filter_status" class="form-select form-select-sm mb-2 datatable-input">
+                                     <option value="">ALL</option>
+                                     <option value="0">Pending</option>
+                                     <option value="1">Approved</option>
+                                     <option value="2">Rejected</option>
+                                 </select>`);
+                                 break;
+                             case 'Account':
+                                 input = $(`<select id="filter_is_company" name="filter_is_company" class="form-select form-select-sm mb-2" title="Company">
+                                     <option value="">ALL</option>
+                                     <option value="company-True">Company</option>
+                                     <option value="company-False">Individual</option>
+                                     </select>
+
+                                     <select id="filter_account" name="filter_account" class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                     <option value="">Select</option>
+                                     {% for account in accounts %}
+                                     <option data-chained="company-{{ account.kyc.is_company }}" value="{{ account.id }}">
+                                     {%if account.kyc.is_company %}
+                                         {{ account.kyc.business_name }}
+                                     {% else %}
+                                         {{ account.kyc.first_name }} {{ account.kyc.last_name }}
+                                     {% endif %}
+                                     </option>{% endfor %}
+                                 </select>`);
+                                 break;
+
+                             case 'Sender ID':
+                             case 'Reason':
+                                 input = $(`<input type="text" class="form-control form-control-sm form-filter datatable-input" data-col-index="` + column.index() + `"/>`);
+                                 break;
+                             case 'Actions':
+                                 input = $(`<button id="audit-search" class="btn btn-sm btn-primary d-block w-100 mb-2">
+                                       <i class="la la-search"></i>
+                                       Search
+                                     </button>
+                                     <button id="audit-reset" class="btn btn-sm btn-danger d-block w-100">
+                                       <i class="la la-close"></i>
+                                       Reset
+                                     </button>`);
+
+                                 break;
+                         }
+                         $(input).appendTo($('<th>').appendTo(rowFilter));
+
+                     });
+
+                     $(".datatable-input" ).on( "keydown", function(event) {
+                         if(event.which == 13) {
+                             $("#audit-search").click();
+                         }
+                     });
+
+                     $("#audit-search").on('click', function(e) {
+                         e.preventDefault();
+                         var params = {};
+                         $(rowFilter).find('.datatable-input').each(function() {
+                             var i = $(this).data('col-index');
+                             if (params[i]) {
+                                 params[i] += '|' + $(this).val();
+                             } else {
+                                 params[i] = $(this).val();
+                             }
+                         });
+                         $.each(params, function(i, val) {
+                             // apply search params to datatable
+                             table.column(i).search(val ? val : '', false, false);
+                         });
+                         table.table().draw();
+                     });
+
+                     $("#filter_account").chained("#filter_is_company");
+
+                     $('#date_from').daterangepicker({
+                         singleDatePicker: true,
+                         showDropdowns: true,
+                         minYear: 2019,
+                         startDate: moment().subtract(7, 'day').format("YYYY-MM-DD"),
+                         maxDate: moment().format("YYYY-MM-DD"),
+                         autoApply: true,
+                         autoUpdateInput: true,
+                         locale: {
+                             format: 'YYYY-MM-DD'
+                         }
+                     });
+
+                     $('#date_to').daterangepicker({
+                         singleDatePicker: true,
+                         showDropdowns: true,
+                         maxDate: moment().format("YYYY-MM-DD"),
+                         minYear: 2019,
+                         autoApply: true,
+                         autoUpdateInput: true,
+                         locale: {
+                             format: 'YYYY-MM-DD'
+                         }
+                     });
+
+                     $("#audit-reset").on('click', function(e) {
+                         e.preventDefault();
+                         $(rowFilter).find('.datatable-input').each(function(i) {
+                             $(this).val('');
+                             table.column($(this).data('col-index')).search('', false, false);
+                         });
+                         $(rowFilter).find('.date').each(function(i) {
+                             $(this).val(moment().format("YYYY-MM-DD"));
+                             table.column($(this).data('col-index')).search('', false, false);
+                         });
+                         table.table().draw();
+                     });
+                     // hide search column for responsive table
+                     var hideSearchColumnResponsive = function() {
+                         thisTable.api().columns().every(function() {
+                             var column = this
+                             if (column.responsiveHidden()) {
+                                 $(rowFilter).find('th').eq(column.index()).show();
+                             } else {
+                                 $(rowFilter).find('th').eq(column.index()).hide();
+                             }
+                         })
+                     };
+
+                     // init on datatable load
+                     hideSearchColumnResponsive();
+                     // recheck on window resize
+                     window.onresize = hideSearchColumnResponsive;
+                 },
+
+     });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+             reload: function() {
+                 reloadTable();
+             },
+         };
+     }();
+
+     $(document).ready(function(){
+         SenderTable.init();
+         $("#date_from").val(moment().subtract(7, 'day').format("YYYY-MM-DD"));
+         $("#date_to").val(moment().format("YYYY-MM-DD"));
+     });
+
+    </script>
+{% endblock %}

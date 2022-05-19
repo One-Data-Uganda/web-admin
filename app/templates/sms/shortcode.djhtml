@@ -1,0 +1,162 @@
+{% set title = "Dashboard" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="shortcodeCard">
+                <div class="card-header">
+                    <div class="card-title fw-bold">
+                        <h3 class="card-label">SHORTCODE ID MANAGEMENT</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="#" class="btn btn-sm btn-primary">
+                            Jump to Shortcode Definition
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <button class="btn-close" data-close="alert"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <table id="shortcodeTable" class="table table-darker table-bordered table-striped table-row-bordered gy-2 gs-2">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th>Shortcode ID</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shortcode in shortcodes %}
+                                <tr>
+                                    <td>
+                                        {{ shortcode.account_name }}
+                                        {% if shortcode.is_default %}
+                                            <label class="label label-inline label-success">Default</label>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ shortcode.id }}
+                                    </td>
+                                    <td>
+                                        {% if shortcode.account_id %}
+                                        <button class="btn btn-sm btn-danger" onclick="revokeShortcode(\"{{ url_for('.shortcodeRevoke', id=shortcode.id) }}\"">
+                                            <i class="fas fa-trash"></i>
+                                            Revoke
+                                        </button>
+                                        {% else %}
+                                        <a href="#" data-url="{{ url_for('.shortcodeAssign', id=shortcode.id) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                                            <i class="fa fa-pencil"></i> Assign
+                                        </a>
+                                        {% endif %}
+                                        {% if not shortcode.is_default %}
+                                            <button class="btn btn-sm btn-success" onclick="makeShortcodeDefault(\"{{ url_for('.shortcodeRevoke', id=shortcode.id) }}\"">
+                                                <i class="fas fa-check"></i>
+                                                Make Default
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     function revokeShortcode(url) {
+         bootbox.confirm("Are you sure you want to revoke this shortcode?", function(result) {
+             if (result) {
+                 var target = document.querySelector('#shortcodeCard');
+
+                 var blockUI = new KTBlockUI(target);
+                 blockUI.block();
+                 $.post(url, function(r){
+                     blockUI.release();
+                     if (r.success) {
+                         swal.fire({
+                             text: "Shortcode Deleted",
+                             icon: "success",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         }).then(function(){
+                             $("#shortcodeCard").load("{{ url_for('.shortcode') }} #shortcodeCard", function(){
+                                 ShortcodeTable.init();
+                             });
+                         });
+                     } else {
+                         swal.fire({
+                             text: r.message,
+                             icon: "error",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         });
+                     }
+                 });
+             }
+         });
+     }
+
+     var ShortcodeTable = function() {
+         var table;
+
+         var initTable = function() {
+             table = $("#shortcodeTable").DataTable({
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": false,
+                 "processing": false,
+
+                 dom: datatablesDom,
+                 language: datatablesLanguage,
+
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+         };
+     }();
+
+     $(document).ready(function(){
+         ShortcodeTable.init();
+     });
+
+    </script>
+{% endblock %}

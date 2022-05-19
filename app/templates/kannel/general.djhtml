@@ -1,0 +1,585 @@
+{% set title = "Dashboard" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div id="kannelCard">
+        <div class="d-flex flex-row">
+            <!--begin::Aside-->
+            <div class="flex-row-auto offcanvas-mobile w-200px w-xxl-275px">
+                <!--begin::Card-->
+                <div class="card shadow-sm card-custom card-stretch">
+                    <div class="card-header">
+                        <div class="card-title fw-bold">
+                            <h3 class="card-label">SECTIONS</h3>
+                        </div>
+                    </div>
+                    <!--begin::Body-->
+                    <div class="card-body px-5">
+                        <!--begin:Nav-->
+                        <ul class="nav nav-tabs nav-pills flex-row border-0">
+                            <li class="nav-item me-0 mb-md-2">
+                                <a class="nav-link active btn btn-sm btn-flex btn-active-light-success" data-bs-toggle="tab" href="#shortcodeTab">
+                                    <!--begin::Svg Icon | path: icons/duotune/general/gen001.svg-->
+                                    <span class="svg-icon svg-icon-2 svg-icon-primary me-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                            <path d="M11 2.375L2 9.575V20.575C2 21.175 2.4 21.575 3 21.575H9C9.6 21.575 10 21.175 10 20.575V14.575C10 13.975 10.4 13.575 11 13.575H13C13.6 13.575 14 13.975 14 14.575V20.575C14 21.175 14.4 21.575 15 21.575H21C21.6 21.575 22 21.175 22 20.575V9.575L13 2.375C12.4 1.875 11.6 1.875 11 2.375Z" fill="black" />
+                                        </svg>
+                                    </span>
+                                    <!--end::Svg Icon-->
+                                    <span class="d-flex flex-column align-items-start">
+                                        <span class="fs-4 fw-bold">SHORTCODES</span>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="nav-item me-0 mb-md-2">
+                                <a class="nav-link btn btn-sm btn-flex btn-active-light-info" data-bs-toggle="tab" href="#serviceTab">
+                                    <!--begin::Svg Icon | path: icons/duotune/general/gen003.svg-->
+                                    <span class="svg-icon svg-icon-2 svg-icon-primary">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                            <path d="M13.0079 2.6L15.7079 7.2L21.0079 8.4C21.9079 8.6 22.3079 9.7 21.7079 10.4L18.1079 14.4L18.6079 19.8C18.7079 20.7 17.7079 21.4 16.9079 21L12.0079 18.8L7.10785 21C6.20785 21.4 5.30786 20.7 5.40786 19.8L5.90786 14.4L2.30785 10.4C1.70785 9.7 2.00786 8.6 3.00786 8.4L8.30785 7.2L11.0079 2.6C11.3079 1.8 12.5079 1.8 13.0079 2.6Z" fill="black" />
+                                        </svg>
+                                    </span>
+                                    <!--end::Svg Icon-->
+                                    <span class="d-flex flex-column align-items-start">
+                                        <span class="fs-4 fw-bold">SMS SERVICES</span>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link btn btn-sm btn-flex btn-active-light-danger" data-bs-toggle="tab" href="#sendSMSTab">
+                                    <!--begin::Svg Icon | path: icons/duotune/general/gen017.svg-->
+                                    <span class="svg-icon svg-icon-2 svg-icon-primary">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                            <path opacity="0.3" d="M5 8.04999L11.8 11.95V19.85L5 15.85V8.04999Z" fill="black" />
+                                            <path d="M20.1 6.65L12.3 2.15C12 1.95 11.6 1.95 11.3 2.15L3.5 6.65C3.2 6.85 3 7.15 3 7.45V16.45C3 16.75 3.2 17.15 3.5 17.25L11.3 21.75C11.5 21.85 11.6 21.85 11.8 21.85C12 21.85 12.1 21.85 12.3 21.75L20.1 17.25C20.4 17.05 20.6 16.75 20.6 16.45V7.45C20.6 7.15 20.4 6.75 20.1 6.65ZM5 15.85V7.95L11.8 4.05L18.6 7.95L11.8 11.95V19.85L5 15.85Z" fill="black" />
+                                        </svg>
+                                    </span>
+                                    <!--end::Svg Icon-->
+                                    <span class="d-flex flex-column align-items-start">
+                                        <span class="fs-4 fw-bold">SENDSMS USERS</span>
+                                    </span>
+                                </a>
+                            </li>
+                        </ul>
+                        <!--end:Nav-->
+                    </div>
+                    <!--end::Body-->
+                </div>
+                <!--end::Card-->
+            </div>
+            <!--end::Aside-->
+
+            <!--begin::List-->
+            <div class="flex-row-fluid ml-lg-8 px-8">
+                <div class="d-flex flex-column flex-grow-1">
+                    <div class="tab-content" id="generalTabs">
+                        {% with messages = get_flashed_messages(with_categories=True) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">
+                                        <button class="btn-close" data-close="alert"></button>
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        <div class="tab-pane fade show active" role="tabpanel" id="shortcodeTab">
+                            <!--begin::Card-->
+                            <div class="card shadow-sm card-custom gutter-b">
+                                <div class="card-header">
+                                    <div class="card-title fw-bold">
+                                        <h3 class="card-label">SHORTCODE MANAGEMENT</h3>
+                                    </div>
+                                    <div class="card-toolbar">
+                                        <a href="#" data-url="{{ url_for('.shortcodeEdit', id=0) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                                            <i class="fas fa-plus-circle"></i> Add New Shortcode
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div  id="shortcodeCard">
+                                        <table id="shortcodeTable" class="table table-darker table-sm align-middle table-bordered table-striped table-row-bordered gy-2 gs-2">
+                                            <thead>
+                                                <tr>
+                                                    <th>Shortcode</th>
+                                                    <th>SMSC</th>
+                                                    <th>State</th>
+                                                    <th width="200">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for shortcode in shortcodes %}
+                                                    <tr>
+                                                        <td>
+                                                            {{ shortcode.id }}
+                                                            {% if shortcode.is_default %}
+                                                                <label class="label label-inline label-success">Default</label>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {{ shortcode.smsc_id }}
+                                                        </td>
+                                                        <td>
+                                                            {% if shortcode.active %}
+                                                                <label class="badge badge-sm badge-success">Active</label>
+                                                            {% else %}
+                                                                <label class="badge badge-sm badge-danger">Inactive</label>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <a data-url="{{ url_for(".shortcodeEdit", id=shortcode.id)}}" class="btn btn-sm btn-primary btn-icon ajax-modal" data-size="modal-xl" data-toggle="modal" title="Edit details">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                            {% if shortcode.active %}
+                                                                <button class="btn btn-sm btn-info btn-icon" onclick="disableShortcode({{ shortcode.id }})" title="Disable">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                            {% else %}
+                                                                <button class="btn btn-sm btn-success btn-icon enable-shortcode" onclick="enableShortcode({{ shortcode.id }})" title="Enable">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteShortcode({{ shortcode.id }})" title="Delete">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <!--end::Card-->
+                        </div>
+                        <div class="tab-pane fade" role="tabpanel" id="serviceTab">
+                            <!--begin::Card-->
+                            <div class="card shadow-sm card-custom gutter-b">
+                                <div class="card-header">
+                                    <div class="card-title fw-bold">
+                                        <h3 class="card-label">SMS SERVICES</h3>
+                                    </div>
+                                    <div class="card-toolbar">
+                                        <a href="#" data-url="{{ url_for('.smsServiceEdit', id=0) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                                            <i class="fas fa-plus-circle"></i> Add New SMS Service
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="smsServiceCard">
+                                        <table id="smsServiceTable" class="table table-darker table-sm align-middle table-bordered table-striped table-row-bordered gy-2 gs-2">
+                                            <thead>
+                                                <tr>
+                                                    <th>Keyword</th>
+                                                    <th>Shortcode</th>
+                                                    <th>Max Msg</th>
+                                                    <th>URL</th>
+                                                    <th>Type</th>
+                                                    <th>SMSC</th>
+                                                    <th>State</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for service in sms_services %}
+                                                    <tr>
+                                                        <td>
+                                                            {{ service.keyword }}
+                                                        </td>
+                                                        <td>
+                                                            {{ service.shortcode_id }}
+                                                        </td>
+                                                        <td>
+                                                            {{ service.max_messages }}
+                                                        </td>
+                                                        <td>
+                                                            {{ service.url }}
+                                                        </td>
+                                                        <td>
+                                                            {% if service.url_get %}
+                                                                GET
+                                                            {% else %}
+                                                                POST
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {{ service.accepted_smsc }}
+                                                        </td>
+                                                        <td>
+                                                            {% if service.active %}
+                                                                <label class="badge badge-sm badge-success">Active</label>
+                                                            {% else %}
+                                                                <label class="badge badge-sm badge-danger">Inactive</label>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <a data-url="{{ url_for(".smsServiceEdit", id=service.id)}}" class="btn btn-sm btn-primary btn-icon ajax-modal" data-size="modal-xl" data-toggle="modal" title="Edit details">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                            {% if service.active %}
+                                                                <button class="btn btn-sm btn-info btn-icon" onclick="disableSMSService({{ service.id }})" title="Disable">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                            {% else %}
+                                                                <button class="btn btn-sm btn-success btn-icon enable-service" onclick="enableSMSService({{ service.id }})" title="Enable">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSMSService({{ service.id }})" title="Delete">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" role="tabpanel" id="sendSMSTab">
+                            <!--begin::Card-->
+                            <div class="card shadow-sm card-custom gutter-b">
+                                <div class="card-header">
+                                    <div class="card-title fw-bold">
+                                        <h3 class="card-label">SEND SMS USERS</h3>
+                                    </div>
+                                    <div class="card-toolbar">
+                                        <a href="#" data-url="{{ url_for('.sendSMSUserEdit', id=0) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                                            <i class="fas fa-plus-circle"></i> Add New Send SMS User
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div  id="sendSMSUserCard">
+                                        <table id="smsUserTable" class="table table-darker table-sm align-middle table-bordered table-striped table-row-bordered gy-2 gs-2">
+                                            <thead>
+                                                <tr>
+                                                    <th>Username</th>
+                                                    <th>Password</th>
+                                                    <th>SMSC</th>
+                                                    <th>State</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for sms_user in sendsms_users %}
+                                                    <tr>
+                                                        <td>
+                                                            {{ sms_user.username }}
+                                                        </td>
+                                                        <td>
+                                                            {{ sms_user.password }}
+                                                        </td>
+                                                        <td>
+                                                            {{ sms_user.default_smsc }}
+                                                        </td>
+                                                        <td>
+                                                            {% if sms_user.active %}
+                                                                <label class="badge badge-sm badge-success">Active</label>
+                                                            {% else %}
+                                                                <label class="badge badge-sm badge-danger">Inactive</label>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <a data-url="{{ url_for(".sendSMSUserEdit", id=sms_user.id)}}" class="btn btn-sm btn-primary btn-icon ajax-modal" data-size="modal-xl" data-toggle="modal" title="Edit details">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                            {% if sms_user.active %}
+                                                                <button class="btn btn-sm btn-info btn-icon" onclick="disableSendSMSUser({{ sms_user.id }})" title="Disable">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                            {% else %}
+                                                                <button class="btn btn-sm btn-success btn-icon enable-sms_user" onclick="enableSendSMSUser({{ sms_user.id }})" title="Enable">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSendSMSUser({{ sms_user.id }})" title="Delete">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     var target = document.querySelector('#kannelCard');
+
+     var blockUI;
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+
+     var _SMSServiceAction = function(data){
+         blockUI.block();
+         $.post("{{ url_for('.SMSServiceAction')}}", data, function(r){
+             blockUI.release();
+             if (r.success) {
+                 $("#smsServiceCard").load("{{ url_for('.general') }} #smsServiceCard", function(){
+                     SMSServiceTable.init();
+                 });
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         });
+     };
+
+     var deleteSMSService = function(id) {
+         bootbox.confirm("Are you sure you want to remove this service? This is not reversible.", function(result) {
+             if (result) {
+                 var data = {
+                     "action": "delete",
+                     "id": id
+                 };
+                 _SMSServiceAction(data);
+             }
+         });
+     };
+
+     var disableSMSService = function(id) {
+         var data = {
+             "action": 'disable',
+             "id": id
+         }
+         _SMSServiceAction(data);
+     };
+
+     var enableSMSService = function(id) {
+         var data = {
+             "action": 'enable',
+             "id": id
+         }
+         _SMSServiceAction(data);
+     };
+
+
+     var _SendSMSUserAction = function(data){
+         blockUI.block();
+         $.post("{{ url_for('.sendSMSUserAction')}}", data, function(r){
+             blockUI.release();
+             if (r.success) {
+                 $("#sendSMSUserCard").load("{{ url_for('.general') }} #sendSMSUserCard", function(){
+                     SendSMSUserTable.init();
+                 });
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         });
+     };
+
+     var deleteSendSMSUser = function(id) {
+         bootbox.confirm("Are you sure you want to remove this user? This is not reversible.", function(result) {
+             if (result) {
+                 var data = {
+                     "action": "delete",
+                     "id": id
+                 };
+                 _SendSMSUserAction(data);
+             }
+         });
+     };
+
+     var disableSendSMSUser = function(id) {
+         var data = {
+             "action": 'disable',
+             "id": id
+         }
+         _SendSMSUserAction(data);
+     };
+
+     var enableSendSMSUser = function(id) {
+         var data = {
+             "action": 'enable',
+             "id": id
+         }
+         _SendSMSUserAction(data);
+     };
+
+     var _ShortcodeAction = function(data){
+         blockUI.block();
+         $.post("{{ url_for('.sendSMSUserAction')}}", data, function(r){
+             blockUI.release();
+             if (r.success) {
+                 $("#sendSMSUserCard").load("{{ url_for('.general') }} #sendSMSUserCard", function(){
+                     ShortcodeTable.init();
+                 });
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         });
+     };
+
+     var deleteShortcode = function(id) {
+         bootbox.confirm("Are you sure you want to remove this shortcode? This is not reversible.", function(result) {
+             if (result) {
+                 var data = {
+                     "action": "delete",
+                     "id": id
+                 };
+                 _ShortcodeAction(data);
+             }
+         });
+     };
+
+     var disableShortcode = function(id) {
+         var data = {
+             "action": 'disable',
+             "id": id
+         }
+         _ShortcodeAction(data);
+     };
+
+     var enableShortcode = function(id) {
+         var data = {
+             "action": 'enable',
+             "id": id
+         }
+         _ShortcodeAction(data);
+     };
+
+
+     var ShortcodeTable = function() {
+         var table;
+
+         var initTable = function() {
+             table = $("#shortcodeTable").DataTable({
+                 destroy: true,
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": false,
+                 "processing": false,
+                 language: datatablesLanguage,
+
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 dom: datatablesDom,
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+         };
+     }();
+
+     var SMSServiceTable = function() {
+         var table;
+
+         var initTable = function() {
+             table = $("#smsServiceTable").DataTable({
+                 destroy: true,
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": false,
+                 "processing": false,
+                 language: datatablesLanguage,
+
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 dom: datatablesDom,
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+         };
+     }();
+
+     var SendSMSUserTable = function() {
+         var table;
+
+         var initTable = function() {
+             table = $("#sendSMSUserTable").DataTable({
+                 destroy: true,
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": false,
+                 "processing": false,
+                 language: datatablesLanguage,
+
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 dom: datatablesDom,
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+         };
+     }();
+
+     $(document).ready(function(){
+         ShortcodeTable.init();
+         SendSMSUserTable.init();
+         SMSServiceTable.init();
+     });
+
+    </script>
+{% endblock %}

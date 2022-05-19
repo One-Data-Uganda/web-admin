@@ -1,0 +1,237 @@
+{% set title = "SMPPBox Management" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="smppBoxCard">
+                <div class="card-header">
+                    <div class="card-title fw-bold">
+                        <h3 class="card-label">{{ title }}</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="#" data-url="{{ url_for('kannel.smppBoxEdit', id=0) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                            <i class="fas fa-plus-circle"></i> Add New Smppbox User
+                        </a>
+                        <button type="button" class="btn btn-sm btn-info btn-sm ms-5" onclick="regenerateSMPPBox()">
+                            <i class="fa fa-undo"></i> Regenerate SMPPBox Config
+                        </button>
+
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <button class="btn-close" data-close="alert"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <table id="smppBoxTable" class="table table-darker table-bordered table-striped table-row-bordered gy-2 gs-2">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Password</th>
+                                <th>Port</th>
+                                <th>IP Restrictions</th>
+                                <th>Our System ID</th>
+                                <th>Route to SMSC</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for smppbox in smppboxs %}
+                                <tr>
+                                    <td>{{ smppbox.id }}</td>
+                                    <td>{{ smppbox.password }}</td>
+                                    <td>{{ smppbox.port }} </td>
+                                    <td>{{ smppbox.ip_restrictions }}</td>
+                                    <td>{{ smppbox.our_system_id }}</td>
+                                    <td>{{ smppbox.route_to_smsc }}</td>
+                                    <td>
+                                        {% if smppbox.active %}
+                                            <label class="badge badge-inline badge-lg badge-success">Active</label>
+                                        {% else %}
+                                            <label class="badge badge-inline badge-lg badge-danger">Inactive</label>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if smppbox.active %}
+                                            <button class="btn btn-sm btn-info" onclick="disableSMPPBox('{{ smppbox.id }}')">
+                                                De-Activate
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-success" onclick="enableSMPPBox('{{ smppbox.id }}')">
+                                                Activate
+                                            </button>
+                                        {% endif %}
+                                        <a href="#" data-url="{{ url_for('kannel.smppBoxEdit', id=smppbox.id) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                                            <i class="fa fa-pencil"></i> Edit
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteSmppBox({{ smppbox.id }})">
+                                            Delete
+                                        </button>
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     var target = document.querySelector('#smppBoxCard');
+
+     var blockUI;
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+
+     function regenerateSMPPBox(){
+         blockUI.block();
+
+         $.post("{{ url_for('kannel.regenerateSMPP') }}", function(r) {
+             blockUI.release();
+             if (r.success) {
+                 swal.fire({
+                     text: "Successfully scheduled regeneration",
+                     icon: "success",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         });
+     }
+
+     var _SmppboxAction = function(data){
+         blockUI.block();
+         $.post("{{ url_for('.smppBoxAction')}}", data, function(r){
+             blockUI.release();
+             if (r.success) {
+                 $("#smppBoxCard").load("{{ url_for('.smppbox') }} #smppBoxCard", function(){
+                     SmppBoxTable.init();
+                 });
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         });
+     };
+
+     var deleteSmppbox = function(id) {
+         bootbox.confirm("Are you sure you want to remove this smppbox? This is not reversible.", function(result) {
+             if (result) {
+                 var data = {
+                     "action": "delete",
+                     "id": id
+                 };
+                 _SmppboxAction(data);
+             }
+         });
+     };
+
+     var disableSMPPBox = function(id) {
+         var data = {
+             "action": 'disable',
+             "id": id
+         }
+         _SmppboxAction(data);
+     };
+
+     var enableSMPPBox = function(id) {
+         var data = {
+             "action": 'enable',
+             "id": id
+         }
+         _SmppboxAction(data);
+     };
+
+
+     var SmppBoxTable = function() {
+         var table;
+
+         var initTable = function() {
+             table = $("#smppBoxTable").DataTable({
+                 "destroy": true,
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": false,
+                 "processing": false,
+                 language: datatablesLanguage,
+                 "order": [
+                     [0, 'desc']
+                 ],
+                 columnDefs: [
+                     {
+                         "targets": [7],
+                         "orderable": false
+                     }
+                 ],
+
+                 dom: datatablesDomSearch,
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+             reload: function() {
+                 reloadTable();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         SmppBoxTable.init();
+     });
+
+    </script>
+{% endblock %}

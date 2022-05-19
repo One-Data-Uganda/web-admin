@@ -1,0 +1,45 @@
+image: docker:latest
+
+variables:
+  CONTAINER_IMAGE: $CI_REGISTRY_IMAGE
+  DOCKER_DRIVER: overlay2
+  DOCKER_BUILDKIT: 1
+  CONFIG_TYPE: dev
+
+services:
+  - docker:dind
+
+stages:
+  - build
+#  - test
+  - deploy
+
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+
+build:
+  stage: build
+  script:
+    - docker pull $CONTAINER_IMAGE:latest || true
+    - docker build --cache-from $CONTAINER_IMAGE:latest --pull --tag $CONTAINER_IMAGE:$CI_BUILD_REF .
+    - docker push $CONTAINER_IMAGE:$CI_BUILD_REF
+
+# test:
+#   variables:
+#     CONFIG_TYPE: test
+
+#   stage: test
+#   script:
+#     - docker pull $CONTAINER_IMAGE:$CI_BUILD_REF
+#     - docker run $CONTAINER_IMAGE:$CI_BUILD_REF python -m pytest -v --cov=app/ --cache-clear --color=yes app/tests
+#   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+
+
+release:
+  stage: deploy
+  script:
+    - docker pull $CONTAINER_IMAGE:$CI_BUILD_REF
+    - docker tag $CONTAINER_IMAGE:$CI_BUILD_REF $CONTAINER_IMAGE:latest
+    - docker push $CONTAINER_IMAGE:latest
+  only:
+    - main

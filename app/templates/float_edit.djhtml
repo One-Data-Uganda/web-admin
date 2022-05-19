@@ -1,0 +1,137 @@
+{%set modal_size = "modal-md"%}
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="floatForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="floatModalLabel">Add Float</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            {{ form.csrf_token() }}
+            {{ form.id }}
+            <div class="form-body">
+                {{ render_field(form.fdate, type="date") }}
+                {{ render_field(form.network_id, type="select") }}
+                {{ render_field(form.amount, extraclass="number-field") }}
+                {{ render_field(form.notes) }}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+     var target = document.querySelector("#ajax-modal");
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+
+     var _handleFloatActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#floatForm'),
+             {
+                 fields: {
+                     fdate: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Date is required'
+                             },
+                         }
+                     },
+                     network_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a network'
+                             },
+                         }
+                     },
+                     notes: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter notes'
+                             },
+                         }
+                     },
+                     amount: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Amount is required'
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockModal.block();
+
+             var data = {
+                 "fdate": $("#fdate").val(),
+                 "amount": $("#amount").val(),
+                 "network_id": $("#network_id").val(),
+                 "notes": $("#notes").val()
+             };
+             $.post("{{ url_for('base.floatEdit', id=form.id.data) }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     swal.fire({
+                         text: "Successfully saved float",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     $("#floatCard").load("{{ url_for('base.float') }} #floatCard", function(){
+                         FloatTable.init();
+                     });
+                     $('#ajax-modal').modal('hide');
+                     blockModal.destroy();
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var Float = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleFloatActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         Float.init();
+     });
+    </script>
+{% endblock %}

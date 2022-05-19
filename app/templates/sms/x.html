@@ -1,0 +1,43 @@
+<h>
+    <h>
+        <h>
+            <h>
+                <div class="dropdown dropdown-inline">
+                    <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        Actions
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a href="#" data-size="modal-lg" data-url="{{ url_for('.keywordEdit', id=keyword.id)}}" class="dropdown-item ajax-modal" data-toggle="modal">
+                                <span class="navi-icon"><i class="la la-pencil-alt"></i></span>
+                                <span class="navi-text">Edit</span>
+                            </a>
+                        </li>
+                        {% if keyword.status == 0 or keyword.status == 2 %}
+                        <li>
+                            <a href="#" data-size="modal-lg" data-url="{{ url_for('sms.keywordEdit', id=keyword.id) }}" class="ajax-modal dropdown-item" data-toggle="modal">
+                                <span class="navi-icon"><i class="fas fa-check"></i></span>
+                                <span class="navi-text">Approve</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if keyword.status == 0 or keyword.status == 1 %}
+                        <li>
+                            <a href="#" onclick="rejectKeyword({ keyword.id }})" class="dropdown-item">
+                                <span class="navi-icon"><i class="fas fa-times-circle"></i></span>
+                                <span class="navi-text">
+                                    Reject
+                                </span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <a href="#" onclick="deleteKeyword({ keyword.id }})" class="dropdown-item">
+                                <span class="navi-icon"><i class="fas fa-trash"></i></span>
+                                <span class="navi-text">
+                                    Delete
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>

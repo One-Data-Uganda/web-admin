@@ -1,0 +1,23 @@
+<html>
+    <body>
+        <p>Dear {{ user.name }},</p>
+        <p>
+            You recently requested to reset the password for your account on the USE AGM Portal.
+        </p>
+        <p></p>
+        <p>
+            Your OTP is <h3>{{ code}}</h3>
+        </p>
+        <p>
+            Please note that this code expires in 5 minutes.
+        </p>
+        <p>
+            If you did not request this code, please ignore this message or contact our customer support.
+        </p>
+        <p></p>
+        <p>
+            Regards,<br>
+            Uganda Securities Exchange
+        </p>
+    </body>
+</html>

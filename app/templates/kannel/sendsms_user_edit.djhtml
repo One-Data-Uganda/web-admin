@@ -1,0 +1,125 @@
+{%set modal_size = "modal-md"%}
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="sendSMSUserForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="sendSMSUserModalLabel">Add User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            {{ form.csrf_token() }}
+            {{ form.id }}
+            <div class="form-body">
+                {{ render_field(form.username) }}
+                {{ render_field(form.password) }}
+                {{ render_field(form.default_smsc) }}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+     var target = document.querySelector('#ajax-modal');
+
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+
+
+     var _handleSendSMSUserActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#sendSMSUserForm'),
+             {
+                 fields: {
+                     username: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                     password: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                     default_smsc: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockModal.block();
+
+             var data = $("#sendSMSUserForm").serialize();
+             $.post("{{ url_for('.sendSMSUserEdit', id=form.id.data) }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     $("#sendSMSUserCard").load("{{ url_for('.general') }} #sendSMSUserCard", function(){
+                         SendSMSUserTable.init();
+                     });
+                     swal.fire({
+                         text: "Successfully saved user",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     $('#ajax-modal').modal('hide')
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var SendSMSUser = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleSendSMSUserActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         SendSMSUser.init();
+     });
+    </script>
+{% endblock %}

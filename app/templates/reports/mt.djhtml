@@ -1,0 +1,335 @@
+{% set title = "MT Report" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="accountCard">
+                <div class="card-header">
+                    <div class="card-title fw-bold">
+                        <h3 class="card-label">MT Report</h3>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <button class="btn-close" data-close="alert"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <table id="mtTable" class="table table-darker table-bordered table-striped table-row-bordered gy-2 gs-2" >
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v='1.0.1') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/jquery-chained/jquery.chained.min.js') }}" type="text/javascript"></script>
+
+    <script>
+     "use strict";
+     var table;
+     var MTTable = function() {
+         $.fn.dataTable.Api.register('column().title()', function() {
+             return $(this.header()).text().trim();
+         });
+
+         $.fn.sortOptions = function(){
+             $(this).each(function(){
+                 var op = $(this).children("option");
+                 op.sort(function(a, b) {
+                     return a.text > b.text ? 1 : -1;
+                 })
+                 return $(this).empty().append(op);
+             });
+         };
+
+         var initTable = function() {
+             table = $("#mtTable").DataTable({
+                 "searchDelay": 700,
+                 "serverSide": true,
+                 "processing": true,
+
+                 dom: datatablesDomButtons,
+                 language: datatablesLanguage,
+                 buttons: datatablesButtons,
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 //set the initial value
+                 "ajax": {
+                     "url": "{{ url_for('reports.mtJSON') }}", // ajax source
+                     "type": "POST",
+                     "data": function(d){
+                         if (d.columns[0].search.value == "") {
+                             d.columns[0].search.value = moment().format("YYYY-MM-DD") + "|" + moment().format("YYYY-MM-DD");
+                         }
+                     }
+                 },
+                 "columns": [
+                     { "data": "Date", "title": "Date & Time", type: "date",
+                       width: 150,
+                       render: $.fn.dataTable.render.moment( 'YYYY-MM-DDTHH:mm:ss.SSSSSS', 'YYYY-MM-DD hh:mm:ss A') },
+                     { "data": "Account ID", "title": "Account",
+                       width: 150,
+                       render: function(data, type, row){
+                           return row["Account"];
+                       }
+                     },
+                     { "data": "By Whom", "title": "By Whom",
+                     width: 100},
+                     { "data": "Sender", "title": "Sender", "width": 50},
+                     { "data": "Recipient", "title": "Recipient", "width": 100 },
+                     { "data": "Network", "title": "Network", "width": 70 },
+                     { "data": "Credits", "title": "Credits", "width": 50,
+                       class: "text-end",
+                       render: $.fn.dataTable.render.number( ',', '.', 0 ) },
+                     { "data": "status_id", "title": "Status", "type": "num",
+                       width: 100,
+                       render: function(data, type, row){
+                           switch(data) {
+                                 case 0:
+                                     return "Queued";
+                                     break;
+                                 case 1:
+                                     return "Delivered";
+                                     break;
+                                 case 2:
+                                     return "Not Delivered";
+                                     break;
+                                 case 4:
+                                     return "Unreachable";
+                                     break;
+                                 case 8:
+                                     return "Pending";
+                                     break;
+                                 case 16:
+                                     var r = "Rejected";
+                                     if (row['Extra Message']) {
+                                         r = r + ' [' + row['Extra Message'] + ']';
+                                     }
+                                     return r;
+                                     break;
+                                 default:
+                                     return "Pending";
+                                     break;
+
+                             }
+                         }
+                     },
+                     { "data": "Message", "title": "Message", "width": "20%",
+                       render: function(data) {
+                           return decodeURIComponent(data);
+                       }
+                     }
+                 ],
+                 initComplete: function() {
+                     var thisTable = this;
+                     var rowFilter = $('<tr class="filter align-top"></tr>').appendTo($(table.table().header()));
+
+                     this.api().columns().every(function() {
+                         var column = this;
+                         var input;
+
+                         switch (column.title()) {
+                             case 'Date & Time':
+                                 input = $(`
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="From" id="date_from"
+                                     data-col-index="` + column.index() + `"/>
+                                        <span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="To" id="date_to"
+                                     data-col-index="` + column.index() + `"/>
+                                        <span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                                </div>`);
+                                 break;
+                             case 'Account':
+                                 input = $(`<select id="filter_is_company" class="form-select form-select-sm mb-2" title="Company">
+                                 <option value="">ALL</option>
+                                 <option value="company-True">Company</option>
+                                 <option value="company-False">Individual</option>
+                                 </select>
+                                 <select id="filter_account" class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                 <option value="">Select</option>
+                                     {% for account in accounts %}
+                                 <option data-chained="company-{{ account.kyc.is_company }}" value="{{ account.id }}">
+
+                                     {% if account.kyc.is_company %}
+                                     {{ account.kyc.business_name }}
+                                     {% else %}
+                                     {{ account.kyc.first_name }} {{ account.kyc.last_name }}
+                                     {% endif %}
+                                     </option>{% endfor %}
+                                     </select>`);
+                                 break;
+                             case 'Description':
+                                 input = $(`<input type="text" class="form-control form-control-sm form-filter datatable-input" data-col-index="` + column.index() + `"/>
+                                     <button id="audit-search" class="btn btn-sm btn-primary audit-2 mt-2 me-2">
+                                       <i class="la la-search"></i>
+                                       Search
+                                     </button>
+                                     <button id="audit-reset" class="btn btn-sm btn-danger me-2">
+                                       <i class="la la-close"></i>
+                                       Reset
+                                     </button>`);
+
+                                 break;
+
+                             case 'By Whom':
+                                 input = $(`<select id="filter_whom" class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                 <option value="">- ALL -</option>
+                                     {% for api in apis %}
+                                     <option data-chained="{{ api.account_id }}" value="{{ api.id }}">
+                                     API_{{ api.name }}
+                                     </option>{% endfor %}
+                                     {% for user in users %}
+                                     <option data-chained="{{ user.account_group.account_id }}" value="{{ user.id }}">
+                                     {{ user.kyc.first_name }} {{ user.kyc.last_name }}
+                                     </option>{% endfor %}
+                                     </select>`);
+                                 break;
+                             case 'Sender':
+                             case 'Recipient':
+                                 input = $(`<input type="text" class="form-control form-control-sm form-filter datatable-input" data-col-index="` + column.index() + `"/>`);
+                                 break;
+
+                             case 'Network':
+                                 input = $(`<select id="filter_network" class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                     <option value="">[ALL]</option>
+                                     {% for network in networks %}
+                                     <option value="{{ network.id }}">
+
+                                     {{ network.name }}
+                                     </option>{% endfor %}
+                                     </select>`);
+                                 break;
+
+                             case 'Status':
+                                 input = $(`<select class="form-select form-filter form-select-sm datatable-input" title="Status" data-col-index="` + column.index() + `">
+                                 <option value="">ALL</option>
+                                 <option value="1">Delivered</option>
+                                 <option value="2">Not Delivered</option>
+                                 <option value="4">Unreachable</option>
+                                 <option value="8">Pending</option>
+                                 <option value="16">Rejected</option>
+                                 <option value="0">Queued</option>
+                                 </select>`);
+                                 break;
+
+                             case 'Message':
+                                 input = $(`<input type="text" class="form-control form-control-sm form-filter datatable-input" data-col-index="` + column.index() + `"/>`);
+                                 var search = $(`
+                                 <button class="btn btn-sm btn-primary kt-btn btn-sm mt-2 me-2 kt-btn--icon">
+                                     <span>
+                                         <i class="la la-search"></i>
+                                         <span>Search</span>
+                                     </span>
+                                 </button>`);
+
+                                 var reset = $(`
+                                 <button id="mt-reset" class="btn btn-sm btn-danger mt-2 kt-btn btn-sm kt-btn--icon">
+                                     <span>
+                                        <i class="la la-close"></i>
+                                        <span>Reset</span>
+                                     </span>
+                                 </button>`);
+
+                                 $('<th nowrap>').append(input).append(search).append(reset).appendTo(rowFilter);
+
+                                 $(".datatable-input" ).on( "keydown", function(event) {
+                                     if(event.which == 13) {
+                                         $(search).click();
+                                     }
+                                 });
+
+                                 $(search).on('click', function(e) {
+                                     e.preventDefault();
+                                     var params = {};
+                                     $(rowFilter).find('.datatable-input').each(function() {
+                                         var i = $(this).data('col-index');
+                                         if (params[i]) {
+                                             params[i] += '|' + $(this).val();
+                                         } else {
+                                             params[i] = $(this).val();
+                                         }
+                                     });
+                                     $.each(params, function(i, val) {
+                                         // apply search params to datatable
+                                         table.column(i).search(val ? val : '', false, false);
+                                     });
+                                     table.table().draw();
+                                 });
+
+                                 $(reset).on('click', function(e) {
+                                     e.preventDefault();
+                                     $(rowFilter).find('.datatable-input').each(function(i) {
+                                         $(this).val('');
+                                         table.column($(this).data('col-index')).search('', false, false);
+                                     });
+                                     $(rowFilter).find('.date').each(function(i) {
+                                         $(this).val(moment().format("YYYY-MM-DD"));
+                                         table.column($(this).data('col-index')).search('', false, false);
+                                     });
+                                     table.table().draw();
+                                 });
+                                 break;
+                         }
+
+                         if (column.title() !== 'Message') {
+                             $(input).appendTo($('<th>').appendTo(rowFilter));
+                         }
+                     });
+
+                     $('.date').daterangepicker({
+                         singleDatePicker: true,
+                         showDropdowns: true,
+                         minYear: 2019,
+                         maxYear: parseInt(moment().format("YYYY")),
+                         autoApply: true,
+                         autoUpdateInput: true,
+                         locale: {
+                             format: 'YYYY-MM-DD'
+                         }
+                     });
+
+                     $("#filter_account").chained("#filter_is_company");
+                     $("#filter_whom").sortOptions();
+                     $("#filter_whom").chained("#filter_account");
+
+                 },
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+
+         };
+     }();
+
+     $(document).ready(function(){
+         MTTable.init();
+     });
+    </script>
+{% endblock %}

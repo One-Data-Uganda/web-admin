@@ -1,0 +1,210 @@
+{%set modal_size = "modal-xl"%}
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="smsServiceForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="serviceModalLabel">Add Service</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            {{ form.csrf_token() }}
+            {{ form.id }}
+            <div class="form-body">
+                <div class="form-group row mb-5">
+                    <label for="keyword" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.keyword) }}
+                    </label>
+                    <div class="col-md-2">
+                        {{ render_simple_field(form.keyword)}}
+                    </div>
+                    <label for="shortcode_id" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.shortcode_id) }}
+                    </label>
+                    <div class="col-md-2">
+                        {{ render_simple_field(form.shortcode_id, type="select")}}
+                    </div>
+                    <label for="process_local" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        Process Locally?
+                    </label>
+                    <div class="col-md-1">
+                        <div class="form-check form-check-custom form-check-solid">
+                            <input class="form-check-input" type="radio" value="1" name="process_local" id="process_local_1" checked="checked" />
+                            <label class="form-check-label" for="process_local_1">
+                                Yes
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-check form-check-custom form-check-solid">
+                            <input class="form-check-input" type="radio" name="process_local" value="0" id="process_local_0"/>
+                            <label class="form-check-label" for="process_local_0">
+                                No
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row mb-5" id="local_process" style="display:none">
+                    <label for="keyword" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.url) }}
+                    </label>
+                    <div class="col-md-2">
+                        {{ render_simple_field(form.url_get, type="select")}}
+                    </div>
+                    <div class="col-md-8">
+                        {{ render_simple_field(form.url) }}
+                    </div>
+                </div>
+                <div class="form-group row mb-5">
+                    <label for="accepted_smsc" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.accepted_smsc) }}
+                    </label>
+                    <div class="col-md-4">
+                        {{ render_simple_field(form.accepted_smsc)}}
+                    </div>
+                    <label for="max_messages" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.max_messages) }}
+                    </label>
+                    <div class="col-md-4">
+                        {{ render_simple_field(form.max_messages)}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+     var target = document.querySelector('#ajax-modal');
+
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+     var _handleSMSServiceActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#smsServiceForm'),
+             {
+                 fields: {
+                     keyword: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                     shortcode_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a value'
+                             },
+                         }
+                     },
+                     max_messages: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                     accepted_smsc: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                     url: {
+                         validators: {
+                             callback: {
+                                 callback: function (input) {
+                                     var v = $("#process_local_1").is(":checked");
+                                     return v || input.value !== '';
+                                 },
+                                 message: 'Please enter a value'
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockModal.block();
+
+             var data = $("#smsServiceForm").serialize();
+             $.post("{{ url_for('.smsServiceEdit', id=form.id.data) }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     $("#smsServiceCard").load("{{ url_for('.general') }} #smsServiceCard", function(){
+                         SMSServiceTable.init();
+                     });
+                     swal.fire({
+                         text: "Successfully saved service",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     $('#ajax-modal').modal('hide')
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var SMSService = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleSMSServiceActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         SMSService.init();
+
+         $("input[name=process_local]").on("click", function(){
+             if ($(this).val() == "1") {
+                 $("#local_process").hide();
+             } else {
+                 $("#url").val("");
+                 $("#local_process").show();
+             }
+         });
+
+         {% if form.url.data and form.url.data != "{LOCAL}"%}
+         $("#local_process").show();
+         {% endif %}
+
+     });
+    </script>
+{% endblock %}

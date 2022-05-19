@@ -1,0 +1,100 @@
+<!--begin::Header-->
+                    <div id="kt_header" class="header flex-column header-fixed">
+
+                        <!--begin::Top-->
+                        <div class="header-top">
+
+                            <!--begin::Container-->
+                            <div class="container-fluid">
+
+                                <!--begin::Left-->
+                                <div class="d-none d-lg-flex align-items-center me-3">
+
+                                    <!--begin::Logo-->
+                                    <a href="{{ url_for('base.dashboard')}}" class="me-10">
+                                        <img alt="Logo" src="{{ url_for('static', filename='logo.png') }}" class="max-h-35px" />
+                                    </a>
+
+                                    <!--end::Logo-->
+
+                                </div>
+
+                                <!--end::Left-->
+
+                                <!--begin::Topbar-->
+                                <div class="topbar">
+                                    <!--begin::User-->
+                                    <div data-bs-toggle="dropdown">
+                                        <div class="btn btn-sm btn-icon w-sm-auto d-flex align-items-center btn-lg px-2">
+                                            <div class="d-flex flex-column text-right pr-sm-3">
+                                                <span class=" font-weight-bolder font-size-sm d-none d-sm-inline">{{ current_user.name }}</span>
+                                            </div>
+                                            <span class="symbol symbol-35">
+                                                <span class="symbol-label font-size-h5 font-weight-bold  bg-white-o-30">{{ current_user.name[:1] }}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!--end::User-->
+                                    <!--begin::Dropdown-->
+                                    <div class="dropdown-menu p-0 m-0 dropdown-menu-anim-up dropdown-menu-right">
+                                        <!--begin::Nav-->
+                                        <ul class="navi navi-hover py-4">
+                                            <!--begin::Item-->
+                                            <li class="navi-item">
+                                                <a href="#" data-url="{{ url_for('base.index')}}" class="navi-link ajax-modal">
+                                                    <span class="me-3">
+                                                        <i class="fas fa-key text-primary" ></i>
+                                                    </span>
+                                                    <span class="navi-text">View Profile</span>
+                                                </a>
+                                            </li>
+                                            <!--end::Item-->
+                                            <!--begin::Item-->
+                                            <li class="navi-item">
+                                                <a href="{{ url_for('base.logout') }}" class="navi-link">
+                                                    <span class="me-3">
+                                                        <i class="fas fa-sign-out-alt text-danger" ></i>
+                                                    </span>
+                                                    <span class="navi-text">Logout</span>
+                                                </a>
+                                            </li>
+                                            <!--end::Item-->
+                                        </ul>
+                                        <!--end::Nav-->
+                                    </div>
+                                    <!--end::Dropdown-->
+                                </div>
+                                <!--end::Topbar-->
+                            </div>
+
+                            <!--end::Container-->
+                        </div>
+
+                        <!--end::Top-->
+
+                        <!--begin::Bottom-->
+                        <div class="header-bottom">
+
+                            <!--begin::Container-->
+                            <div class="container-fluid">
+
+                                <!--begin::Header Menu Wrapper-->
+                                <div class="header-menu-wrapper header-menu-wrapper-left" id="kt_header_menu_wrapper">
+                                    <!--begin::Header Menu-->
+                                    <div id="kt_header_menu" class="header-menu header-menu-left header-menu-mobile header-menu-layout-default header-menu-root-arrow">
+                                        <!--begin::Header Nav-->
+                                        {{ nav.admins.render(renderer='renderer') }}
+                                    </div>
+                                    <!--end::Header Menu-->
+                                </div>
+                                <!--end::Header Menu Wrapper-->
+
+                            </div>
+                            <!--end::Container-->
+                        </div>
+
+                        <!--end::Bottom-->
+                    </div>
+
+                    <!--end::Header-->

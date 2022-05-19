@@ -1,0 +1,144 @@
+{% set title = "Float Management" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="floatCard">
+                <div class="card-header">
+                    <div class="card-title fw-bold">
+                        <h3 class="card-label">FLOAT MANAGEMENT</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="#" data-url="{{ url_for('base.floatEdit', id=0) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                            <i class="fas fa-plus-circle"></i> Add New Float
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table id="floatTable" class="table table-darker table-striped align-middle table-row-bordered table-bordered table-striped gy-2 gs-2" >
+                        <thead>
+                            <tr>
+                                <th width="15%">Date</th>
+                                <th>Administrator</th>
+                                <th width="10%">Network</th>
+                                <th width="10%">Credits</th>
+                                <th width="30%">Notes</th>
+                                <th width="50">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in floats %}
+                                <tr>
+                                    <td>{{ f.fdate }}</td>
+                                    <td>{{ f.user.first_name }} {{ f.user.last_name }}</td>
+                                    <td>{{ f.network.name }}</td>
+                                    <td>{{ f.amount }}</td>
+                                    <td>{{ f.notes }}</td>
+                                    <td width="150">
+                                        <button onclick="deleteFloat({{f.id}})" class="btn btn-sm btn-danger">
+                                            <i class="far fa-trash-alt"></i> Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     function deleteFloat(id) {
+         bootbox.confirm("Are you sure you want to remove this float? This will impact your balances for this network.", function(result) {
+             if (result) {
+                 var target = document.querySelector("#floatCard");
+
+                 var blockUI;
+
+                 blockUI = KTBlockUI.getInstance(target);
+
+                 if (!blockUI) {
+                     blockUI = new KTBlockUI(target);
+                 }
+
+                 blockUI.block();
+
+                 $.post("{{ url_for('base.floatRemove') }}", "action=del&id="+id, function(r){
+                     blockUI.release();
+                     if (r.success) {
+                         swal.fire({
+                             text: "Float Deleted",
+                             icon: "success",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         }).then(function(){
+                             $("#floatCard").load("{{ url_for('base.float') }} #floatCard", function(){
+                                 FloatTable.init();
+                             });
+                         });
+                     } else {
+                         swal.fire({
+                             text: r.message,
+                             icon: "error",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         });
+                     }
+                 });
+             }
+         });
+     }
+
+     var FloatTable = function() {
+         var table;
+
+         var initTable = function() {
+             table = $("#floatTable").DataTable({
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": false,
+                 "processing": false,
+                 language: datatablesLanguage,
+
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 dom: datatablesDom,
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+         };
+     }();
+
+     $(document).ready(function(){
+         FloatTable.init();
+     });
+    </script>
+{% endblock %}

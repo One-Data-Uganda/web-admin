@@ -1,0 +1,302 @@
+{% set title = "Global Blacklist" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="blacklistCard">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3 class="card-label">{{ title }}</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="#" data-url="{{ url_for('sms.blacklistEdit') }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                            <i class="flaticon2-plus"></i> Blacklist MSISDN
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body" id="contactBlacklistCard">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <button class="btn-close" data-close="alert"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <table id="blacklistTable" class="table table-darker align-middle table-sm table-bordered table-striped gx-2">
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+
+     var target = document.querySelector('#blacklistCard');
+
+     var blockUI;
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+
+     var _BlacklistAction = function(data){
+         blockUI.block();
+         $.post("{{ url_for('sms.blacklistAction')}}", data, function(r){
+             blockUI.release();
+             if (r.success) {
+                 BlacklistTable.reload();
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+             }
+         });
+     };
+
+     var deleteBlacklist = function(id) {
+         var data = {
+             "action": "delete",
+             "id": id
+         };
+         _BlacklistAction(data);
+     };
+
+
+     var BlacklistTable = function() {
+         var table;
+
+         var reloadTable = function() {
+             table.ajax.reload();
+         }
+
+         var initTable = function() {
+             $.fn.dataTable.Api.register('column().title()', function() {
+                 return $(this.header()).text().trim();
+             });
+             table = $("#blacklistTable").DataTable({
+                 "destroy": true,
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": true,
+                 "processing": true,
+                 language: datatablesLanguage,
+
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 //set the initial value
+                 "ajax": {
+                     "url": "{{ url_for('.blacklistJSON') }}", // ajax source
+                     "type": "POST",
+                 },
+                 "columns": [
+                     { "data": "created_at", "title": "Date Submitted", type: "date",
+                       width: 200,
+                       render: $.fn.dataTable.render.moment( 'YYYY-MM-DDTHH:mm:ss.SSSSSS', 'YYYY-MM-DD hh:mm:ss A') },
+                     { "data": "account", title: "Blacklisted By",
+                       render: function (v, t, r) {
+                           return r['account'];
+                       }
+                     },
+                     { "data": "shortcode", title: "Shortcode" },
+                     { "data": "msisdn", title: "MSISDN" },
+                     { "data": "sender", title: "Sender ID" },
+                     { "data": "notes", title: "Notes" },
+                     { data: "id", title: "Actions",
+                       width: 120,
+                      render: function (v, t, r) {
+                          return `<button onclick="deleteBlacklist(` + v + `)" class="btn btn-sm btn-danger mb-2">
+                                <span class="navi-icon"><i class="fas fa-trash"></i></span>
+                                <span class="navi-text">Delete</span>
+                            </button>`;
+                      }
+                     },
+                 ],
+
+                 dom: datatablesDom,
+                 initComplete: function() {
+                     var thisTable = this;
+                     var rowFilter = $('<tr class="filter align-top"></tr>').appendTo($(table.table().header()));
+
+                     this.api().columns().every(function() {
+                         var column = this;
+                         var input;
+
+                         switch (column.title()) {
+                             case 'Date Submitted':
+                                 input = $(`
+                          <div class="input-group mb-2">
+                          <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="From" id="date_from"
+                          data-col-index="` + column.index() + `"/>
+                          <span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                          </div>
+                          <div class="input-group d-flex align-content-center">
+                          <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="To" id="date_from"
+                          data-col-index="` + column.index() + `"/>
+                          <span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                          </div>`);
+                                 break;
+                             case 'Shortcode':
+                                 input = $(`<select id="filter_shortcode" name="filter_shortcode" class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                     <option value="">ALL</option>
+                                     {% for shortcode in shortcodes %}
+                                     <option value="{{ shortcode.code }}">
+                                         {{ shortcode.code }}
+                                     </option>{% endfor %}
+                                 </select>`);
+                                 break;
+
+                             case 'Blacklisted By':
+                                 input = $(`<select id="filter_is_company" name="filter_is_company" class="form-select form-select-sm mb-2" title="Company">
+                          <option value="">ALL</option>
+                          <option value="company-True">Company</option>
+                          <option value="company-False">Individual</option>
+                          </select>
+
+                          <select id="filter_account" name="filter_account" class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                          <option value="">Select</option>
+                                     {% for account in accounts %}
+                          <option data-chained="company-{{ account.kyc.is_company }}" value="{{ account.id }}">
+                                     {%if account.kyc.is_company %}
+                                         {{ account.kyc.business_name }}
+                                     {% else %}
+                                         {{ account.kyc.first_name }} {{ account.kyc.last_name }}
+                                     {% endif %}
+                                     </option>{% endfor %}
+                                 </select>`);
+                                 break;
+
+                             case 'Notes':
+                             case 'MSISDN':
+                             case 'Sender ID':
+                                 input = $(`<input type="text" class="form-control form-control-sm form-filter datatable-input" data-col-index="` + column.index() + `"/>`);
+                                 break;
+                             case 'Actions':
+                                 input = $(`<button id="audit-search" class="btn btn-sm btn-primary d-block w-100 mb-2 me-2">
+                                       <i class="la la-search"></i>
+                                       Search
+                                     </button>
+                                     <button id="audit-reset" class="btn btn-sm btn-danger d-block w-100  me-2">
+                                       <i class="la la-close"></i>
+                                       Reset
+                                     </button>`);
+
+                                 break;
+                         }
+                         $(input).appendTo($('<th>').appendTo(rowFilter));
+
+                     });
+
+                     $(".datatable-input" ).on( "keydown", function(event) {
+                         if(event.which == 13) {
+                             $("#audit-search").click();
+                         }
+                     });
+
+                     $("#audit-search").on('click', function(e) {
+                         e.preventDefault();
+                         var params = {};
+                         $(rowFilter).find('.datatable-input').each(function() {
+                             var i = $(this).data('col-index');
+                             if (params[i]) {
+                                 params[i] += '|' + $(this).val();
+                             } else {
+                                 params[i] = $(this).val();
+                             }
+                         });
+                         $.each(params, function(i, val) {
+                             // apply search params to datatable
+                             table.column(i).search(val ? val : '', false, false);
+                         });
+                         table.table().draw();
+                     });
+
+                     $("#filter_account").chained("#filter_is_company");
+
+                     $('.date').daterangepicker({
+                         singleDatePicker: true,
+                         showDropdowns: true,
+                         minYear: 2019,
+                         maxYear: parseInt(moment().format("YYYY")),
+                         autoApply: true,
+                         autoUpdateInput: true,
+                         locale: {
+                             format: 'YYYY-MM-DD'
+                         }
+                     });
+
+                     $("#audit-reset").on('click', function(e) {
+                         e.preventDefault();
+                         $(rowFilter).find('.datatable-input').each(function(i) {
+                             $(this).val('');
+                             table.column($(this).data('col-index')).search('', false, false);
+                         });
+                         $(rowFilter).find('.date').each(function(i) {
+                             $(this).val(moment().format("YYYY-MM-DD"));
+                             table.column($(this).data('col-index')).search('', false, false);
+                         });
+                         table.table().draw();
+                     });
+                     // hide search column for responsive table
+                     var hideSearchColumnResponsive = function() {
+                         thisTable.api().columns().every(function() {
+                             var column = this
+                             if (column.responsiveHidden()) {
+                                 $(rowFilter).find('th').eq(column.index()).show();
+                             } else {
+                                 $(rowFilter).find('th').eq(column.index()).hide();
+                             }
+                         })
+                     };
+
+                     // init on datatable load
+                     hideSearchColumnResponsive();
+                     // recheck on window resize
+                     window.onresize = hideSearchColumnResponsive;
+                 },
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+             reload: function() {
+                 reloadTable();
+             },
+         };
+     }();
+
+     $(document).ready(function(){
+         BlacklistTable.init();
+     });
+
+    </script>
+{% endblock %}

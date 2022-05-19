@@ -1,0 +1,99 @@
+{% macro render_simple_field(field, type="text", extraclass="", autocomplete="", readonly=False) %}
+    <!--begin::{{ field.name }}-->
+    {% if type == "radio" %}
+        <div class="d-flex justify-content-start">
+            {% for val, label in field.choices %}
+                <div class="form-check form-check-custom form-check-solid me-3">
+                    <input type="radio" class="form-check-input" name="{{ field.name }}" id="{{ field.name }}-{{ val }}" value="{{ val }}"
+                           {% if field.data == val %}
+                           checked="checked"
+                           {% endif %}/>
+                    <label class="form-check-label" for="{{ field.name }}-{{ val }}">
+                        {{ label }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+    {% elif type == "switch" %}
+        <div class="form-check form-switch form-check-custom form-check-solid">
+            {{ field(class="form-check-input") }}
+        </div>
+    {% elif type == "date-open" %}
+        <div class="input-group">
+            {{ field(class="form-control form-control-sm "+extraclass,  data_date_format="yyyy-mm-dd", readonly=True) }}
+            <div class="input-group-append">
+                <span class="input-group-text">
+                    <i class="fa fa-calendar"></i>
+                </span>
+            </div>
+        </div>
+    {% elif type == "date" %}
+        <div class="input-group">
+            {{ field(class="form-control form-control-sm date-past "+extraclass,  data_date_format="yyyy-mm-dd", readonly=True) }}
+            <div class="input-group-append">
+                <span class="input-group-text">
+                    <i class="fa fa-calendar"></i>
+                </span>
+            </div>
+        </div>
+    {% elif type == "datetime" %}
+        <div class="input-grouptime" data-date-start-date="+0d">
+            {{ field(class="form-control form-control-sm "+extraclass,  data_date_format="yyyy-mm-dd", readonly=True) }}
+            <div class="input-group-append">
+                <span class="input-group-text">
+                    <i class="fa fa-calendar"></i>
+                </span>
+            </div>
+        </div>
+    {% elif type == "dob" %}
+        <div class="input-group" data-date-end-date="-18y">
+            {{ field(class="date-dob form-control form-control-sm "+extraclass, readonly=True) }}
+            <span class="input-group-text">
+                <i class="fa fa-calendar"></i>
+            </span>
+        </div>
+    {% elif type == "select" %}
+        {{ field(class="form-select form-select-sm "+extraclass) }}
+    {% elif type == "select2" %}
+        {{ field(class="form-select form-select-sm "+extraclass, data_control="select2", data_placeholder=field.label.text) }}
+    {% elif type == "image" %}
+        <div class="image-input image-input-empty image-input-outline mt-5" id="kt_{{ field.name }}" style="background-image: url({{ url_for('static', filename='assets/media/users/blank.png') }})">
+            <div class="image-input-wrapper"></div>
+
+            <label class="btn btn-sm btn-icon btn-circle btn-white btn-hover-text-primary btn-shadow" data-action="change" data-toggle="tooltip" title="" data-original-title="Change image">
+                <i class="fa fa-pen icon-sm text-muted"></i>
+                {{ field(accept=".png, .jpg, .jpeg") }}
+                <input type="hidden" name="{{ field.name}}_remove"/>
+            </label>
+
+            <span class="btn btn-sm btn-icon btn-circle btn-white btn-hover-text-primary btn-shadow" data-action="remove" data-toggle="tooltip" title="Remove image">
+                <i class="ki ki-bold-close icon-xs text-muted"></i>
+            </span>
+        </div>
+    {% elif type == "file" %}
+        <div class="dropzone dropzone-default" id="{{ field.name }}">
+            <div class="dropzone-msg dz-message needsclick">
+                <h3 class="dropzone-msg-title">Drop file here or click to upload.</h3>
+            </div>
+        </div>
+    {% else %}
+        {{ field(class="form-control form-control-sm "+extraclass, placeholder=field.label.text, autocomplete=autocomplete) }}
+    {% endif %}
+    <!--end::{{ field.name }}-->
+{% endmacro %}
+
+{% macro render_label(field, type="text", extraclass="") %}
+    {{ field.label.text }}:
+    {% if field.flags.required %}<span class="text-danger">*</span>{% endif %}
+{% endmacro %}
+
+{% macro render_field(field, type="text", extraclass="", extraDivClass="", label_size=3, readonly=False) %}
+    <div class="form-group row mb-3 {{ extraDivClass }}" id="{{ field.name}}_Div">
+        <label for="{{ field.name }}" class="col-md-{{ label_size }} col-form-label font-weight-bolder ">
+            {{ render_label(field) }}{% if field.required %}<span class="text-danger">*</span>{% endif %}
+        </label>
+        <div class="col-md-{{ 12 - label_size}}">
+            {{ render_simple_field(field, type=type, extraclass=extraclass, readonly=readonly) }}
+        </div>
+    </div>
+{% endmacro %}

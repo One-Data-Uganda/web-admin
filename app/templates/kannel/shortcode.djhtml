@@ -1,0 +1,165 @@
+{% set title = "Shortcode ID Management" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="shortcodeCard">
+                <div class="card-header">
+                    <div class="card-title fw-bold">
+                        <h3 class="card-label">SHORTCODE ID MANAGEMENT</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="#" data-url="{{ url_for('kannel.shortcodeEdit', id=0) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                            <i class="fas fa-plus-circle"></i> Add New Shortcode ID
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <button class="btn-close" data-close="alert"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <table id="shortcodeTable" class="table table-darker table-bordered table-striped table-row-bordered gy-2 gs-2">
+                        <thead>
+                            <tr>
+                                <th>Shortcode</th>
+                                <th>Allowed SMSC</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shortcode in shortcodes %}
+                                <tr>
+                                    <td>
+                                        {{ shortcode }}
+                                        {{ shortcode.id }}
+                                    </td>
+                                    <td>
+                                        {{ shortcode.smsc_id }}
+                                    </td>
+                                    <td width="100">
+                                        <button class="btn btn-sm btn-danger" onclick="deleteShortcode({{ shortcode.id }})">
+                                            Delete
+                                        </button>
+                                        <a href="#" data-url="{{ url_for('kannel.shortcodeEdit', id=shortcode.id) }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                                            <i class="fa fa-pencil"></i> Edit
+                                        </a>
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     var target = document.querySelector('#shortcodeCard');
+
+     var blockUI;
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+
+     function deleteShortcode(id) {
+         bootbox.confirm("Are you sure you want to remove this shortcode?", function(result) {
+             if (result) {
+                 blockUI.block();
+
+                 $.post("{{ url_for('kannel.shortcodeRemove') }}", "action=del&id="+id, function(r){
+                     blockUI.release();
+                     if (r.success) {
+                         swal.fire({
+                             text: "Shortcode Deleted",
+                             icon: "success",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         }).then(function(){
+                             $("#shortcodeCard").load("{{ url_for('kannel.shortcode') }} #shortcodeCard", function(){
+                                 ShortcodeTable.init();
+                             });
+                         });
+                     } else {
+                         swal.fire({
+                             text: r.message,
+                             icon: "error",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         });
+                     }
+                 });
+             }
+         });
+     }
+
+     var ShortcodeTable = function() {
+         var table;
+
+         var reloadTable = function() {
+             table.ajax.reload();
+         };
+
+         var initTable = function() {
+             table = $("#shortcodeTable").DataTable({
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": false,
+                 "processing": false,
+                 language: datatablesLanguage,
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 dom: datablesDom,
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+             reload: function() {
+                 reloadTable();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         ShortcodeTable.init();
+     });
+
+    </script>
+{% endblock %}

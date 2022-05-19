@@ -1,0 +1,345 @@
+{% extends "layout.djhtml" %}
+{% set title = "Profile: Update Personal Information" %}
+{% set active_page = "profile" %}
+{% set profile_thumb = current_user.image | default_profile_image | thumbnail('100x100') %}
+
+{% block content %}
+    <div class="d-flex flex-row">
+        <!--begin::Aside-->
+        <div class="flex-row-auto offcanvas-mobile w-250px w-xxl-350px" id="kt_profile_aside">
+            <!--begin::Profile Card-->
+            <div class="card shadow-sm card-custom card-stretch">
+                <!--begin::Body-->
+                <div class="card-body pt-4">
+                    <!--begin::User-->
+                    <!--begin: Pic-->
+                    <div class="me-7 mb-4">
+                        <div class="symbol symbol-100px symbol-lg-160px symbol-fixed position-relative">
+                            <img src="{{ profile_thumb }}" alt="image">
+                        </div>
+                    </div>
+                    <!--end::Pic-->
+                    <!--begin::Info-->
+                    <a href="#" class="text-gray-900 text-hover-primary fs-2 fw-bolder me-1">{{ current_user.name }}</a>
+                    <!--begin::Nav-->
+                    <div class="menu menu-rounded menu-column menu-title-gray-700 menu-state-title-primary menu-active-bg-light-primary fw-bold">
+                        <!--begin::Item-->
+                        <div class="menu-item mb-1">
+                            <!--begin::Link-->
+                            <a href="#" class="menu-link py-3 active">Personal Information</a>
+                            <!--end::Link-->
+                        </div>
+                        <!--end::Item-->
+                        <!--begin::Item-->
+                        <div class="menu-item mb-1">
+                            <!--begin::Link-->
+                            <a href="{{ url_for('base.profile_password')}}" class="menu-link py-3">Change Password</a>
+                            <!--end::Link-->
+                        </div>
+                        <!--end::Item-->
+                    </div>
+                    <!--end::Nav-->
+                </div>
+                <!--end::Body-->
+            </div>
+            <!--end::Profile Card-->
+        </div>
+        <!--end::Aside-->
+        <!--begin::Content-->
+        <div class="flex-row-fluid ms-lg-10">
+            <form class="form" id="profileForm" method="POST" enctype="multipart/form-data">
+                {{ form.csrf_token }}
+                <!--begin::Card-->
+                <div class="card shadow-sm card-custom card-stretch" id="userCard">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <h3 class="card-label">{{ title }}</h3>
+                        </div>
+                        <div class="card-toolbar">
+                            {{ form.save_btn(class="btn btn-success mr-2") }}
+                        </div>
+                    </div>
+                    <!--end::Header-->
+
+                    <!--begin::Body-->
+                    <div class="card-body">
+                        {% for field, errors in form.errors.items() %}
+                            <div class="alert alert-danger">
+                                {{ form[field].label }}: {{ ', '.join(errors) }}
+                            </div>
+                        {% endfor %}
+                        <div class="form-group row">
+                            {{ form.avatar.label(class="col-xl-4 col-lg-4 col-form-label") }}
+                            <div class="col-lg-8 col-xl-6">
+                                <!--begin::Image input-->
+                                <div class="image-input image-input-empty" data-kt-image-input="true" style="background-image: url({{ profile_thumb }})">
+                                    <!--begin::Image preview wrapper-->
+                                    <div class="image-input-wrapper w-125px h-125px"></div>
+                                    <!--end::Image preview wrapper-->
+
+                                    <!--begin::Edit button-->
+                                    <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-white shadow"
+                                           data-kt-image-input-action="change"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-dismiss="click"
+                                           title="Change avatar">
+                                        <i class="bi bi-pencil-fill fs-7"></i>
+
+                                        <!--begin::Inputs-->
+                                        {{ form.avatar(accept=".png, .jpg, .jpeg") }}
+                                        <input type="hidden" name="avatar_remove" />
+                                        <!--end::Inputs-->
+                                    </label>
+                                    <!--end::Edit button-->
+
+                                    <!--begin::Cancel button-->
+                                    <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-white shadow"
+                                          data-kt-image-input-action="cancel"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-dismiss="click"
+                                          title="Cancel avatar">
+                                        <i class="bi bi-x fs-2"></i>
+                                    </span>
+                                    <!--end::Cancel button-->
+
+                                    <!--begin::Remove button-->
+                                    <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-white shadow"
+                                          data-kt-image-input-action="remove"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-dismiss="click"
+                                          title="Remove avatar">
+                                        <i class="bi bi-x fs-2"></i>
+                                    </span>
+                                    <!--end::Remove button-->
+                                </div>
+                                <!--end::Image input-->
+                            </div>
+                        </div>
+                        <!--end::Input group-->
+                        <!--begin::Input group-->
+                        <div class="row mb-6">
+                            <!--begin::Label-->
+                            <label class="col-lg-4 col-form-label required ">Name</label>
+                            <!--end::Label-->
+                            <!--begin::Col-->
+                            <div class="col-lg-8">
+                                <!--begin::Row-->
+                                <div class="row">
+                                    <!--begin::Col-->
+                                    <div class="col-lg-6 fv-row">
+                                        {{ form.first_name(class="form-control form-control-lg form-control-solid mb-3 mb-lg-0", placeholder="First name") }}
+                                    </div>
+                                    <!--end::Col-->
+                                    <!--begin::Col-->
+                                    <div class="col-lg-6 fv-row">
+                                        {{ form.last_name(class="form-control form-control-lg form-control-solid mb-3 mb-lg-0", placeholder="Last name") }}
+                                    </div>
+                                    <!--end::Col-->
+                                </div>
+                                <!--end::Row-->
+                            </div>
+                            <!--end::Col-->
+                        </div>
+                        <!--end::Input group-->
+                        <div class="row mb-6">
+                            {{ form.dob.label(class="col-lg-4 col-form-label  required") }}
+                            <div class="col-lg-8">
+                                <div class="input-group mb-3">
+                                    {{ form.dob(class="form-control date-dob", readonly="readonly", aria_described_by="date-addon") }}
+                                    <span class="input-group-text" id="date-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Input group-->
+                        <!--begin::Input group-->
+                        <div class="row mb-6">
+                            {{ form.gender.label(class="col-lg-4 col-form-label  required") }}
+                            <div class="col-lg-8 d-flex">
+                                {% for x, y, selected in form.gender.iter_choices() %}
+                                    <div class="form-check form-check-custom form-check-solid me-10">
+                                        <input  class="form-check-input" id="{{ form.gender.name }}-{{ loop.index0 }}" name="{{ form.gender.name }}"  type="radio" value="{{ x }}" {% if selected %} checked="checked" {% endif %}>
+                                        <label class="form-check-label" for="{{ form.gender.name }}-{{ loop.index0 }}">
+                                            {{ y }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <!--end::Input group-->
+                        <!--begin::Input group-->
+                        <div class="row mb-6">
+                            <!--begin::Label-->
+                            <label class="col-lg-4 col-form-label ">
+                                <span class="required">Telephone</span>
+                            </label>
+                            <!--end::Label-->
+                            <!--begin::Col-->
+                            <div class="col-lg-8 fv-row">
+                                {{ form.msisdn(class="form-control form-control-lg form-control-solid", placeholder="Phone number") }}
+                            </div>
+                            <!--end::Col-->
+                        </div>
+                        <!--end::Input group-->
+                        <!--begin::Input group-->
+                        <div class="row mb-6">
+                            <!--begin::Label-->
+                            <label class="col-lg-4 col-form-label ">
+                                <span class="required">Email</span>
+                            </label>
+                            <!--end::Label-->
+                            <!--begin::Col-->
+                            <div class="col-lg-8 fv-row">
+                                {{ form.email(class="form-control form-control-lg form-control-solid", placeholder="Phone number") }}
+                            </div>
+                            <!--end::Col-->
+                        </div>
+                        <!--end::Input group-->
+                    </div>
+                    <!--end::Body-->
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     var kt_avatar = document.querySelector("#kt_avatar");
+     var avatar = new KTImageInput(kt_avatar);
+
+     var form = document.querySelector("#profileForm");
+     var blockUI = new KTBlockUI(form, {
+         message: '<div class="blockui-message"><span class="spinner-border text-primary"></span> Loading...</div>',
+     });
+
+     var validation;
+
+     // Class Definition
+     var Profile = function() {
+         var _handleProfile = function() {
+
+             validation = FormValidation.formValidation(
+                 form,
+                 {
+                     fields: {
+                         first_name: {
+                             validators: {
+                                 notEmpty: {
+                                     message: 'First Name is required'
+                                 },
+                             }
+                         },
+                         last_name: {
+                             validators: {
+                                 notEmpty: {
+                                     message: 'Last Name is required'
+                                 },
+                             }
+                         },
+                         dob: {
+                             validators: {
+                                 notEmpty: {
+                                     message: 'Date of Birth is required'
+                                 },
+                             }
+                         },
+                         gender: {
+                             validators: {
+                                 notEmpty: {
+                                     message: 'Gender is required'
+                                 },
+                             }
+                         },
+                         msisdn: {
+                             validators: {
+                                 checkPhone: {
+                                     message: "The phone number is not valid for the default system country"
+                                 },
+                                 remote: {
+                                     message: 'This telephone number is already registered',
+                                     method: 'GET',
+                                     name: 'msisdn',
+                                     url: '{{ url_for("base.check_msisdn_admin") }}',
+                                     data: function() {
+                                         return {
+                                             id: "{{ current_user.id }}",
+                                             country_id: "RW"
+                                         }
+                                     }
+                                 }
+                             },
+                         },
+                         email: {
+                             validators: {
+                                 notEmpty: {
+                                     message: 'Email address is required'
+                                 },
+                                 emailAddress: {
+                                     message: 'The value is not a valid email address'
+                                 }
+                             },
+                             remote: {
+                                 message: 'This email address is already taken',
+                                 method: 'POST',
+                                 url: '{{ url_for("base.check_email") }}',
+                                 data: function() {
+                                     return {
+                                         id: $("#id").val()
+                                     }
+                                 }
+                             }
+                         },
+                     },
+                     plugins: {
+                         trigger: new FormValidation.plugins.Trigger({
+                             threshold: {
+                                 msisdn: 5,
+                                 email: 5,
+                             },
+                         }),
+                         sequence: new FormValidation.plugins.Sequence(),
+                         submitButton: new FormValidation.plugins.SubmitButton(),
+                         bootstrap: new FormValidation.plugins.Bootstrap5(),
+                         defaultSubmit: new FormValidation.plugins.DefaultSubmit(), // Uncomment this line to enable normal button submit after form validation
+                     }
+                 }
+             );
+
+
+
+         }
+
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleProfile();
+             }
+         };
+     }();
+
+     // Class Initialization
+     jQuery(document).ready(function() {
+         Profile.init();
+         // [{{ form.dob.data }}]
+         $('#dob').daterangepicker({
+             singleDatePicker: true,
+             showDropdowns: true,
+             autoApply: true,
+             minYear: 1950,
+             maxYear: parseInt(moment().subtract(18, 'year').format("YYYY")),
+             {% if form.dob.data %}
+             startDate: "{{ form.dob.data.strftime('%d/%m/%Y') }}",
+             {% else %}
+             startDate: moment().subtract(18, 'year').format("YYYY-MM-DD"),
+             {% endif %}
+             maxDate: moment().subtract(18, 'year').format("YYYY-MM-DD"),
+             locale: {
+                 format: 'YYYY-MM-DD'
+             }
+         });
+     });
+    </script>
+{% endblock %}

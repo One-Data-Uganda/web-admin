@@ -1,0 +1,278 @@
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="accountForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="accountModalLabel">Add/Edit Individual Account</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            {{ form.csrf_token() }}
+            {{ form.id }}
+            <div class="form-body">
+                <div class="form-group row mb-3">
+                    <label for="{{ form.first_name.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.first_name) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ render_simple_field(form.first_name)}}
+                    </div>
+                    <label for="{{ form.last_name.name }}" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.last_name) }}
+                    </label>
+                    <div class="col-md-4">
+                        {{ render_simple_field(form.last_name) }}
+                    </div>
+                </div>
+                <div class="form-group row mb-3">
+                    <label for="{{ form.dob.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.dob) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ render_simple_field(form.dob, type="dob")}}
+                    </div>
+                    <label for="{{ form.gender.name }}" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.gender) }}
+                    </label>
+                    <div class="col-md-4">
+                        {{ render_simple_field(form.gender, type="radio") }}
+                    </div>
+                </div>
+                <div class="form-group row mb-3">
+                    <label for="{{ form.country_id.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.country_id) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ form.country_id(class="form-select form-select-sm ", data_control="select2", data_placeholder="Select Country", data_dropdown_parent="#ajax-modal") }}
+                    </div>
+                    <label for="{{ form.msisdn_1.name }}" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.msisdn_1) }}
+                    </label>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text fs-fluid" id="country_code" name="country_code"></span>
+                            {{ form.msisdn_1(class="form-control form-control-sm placeholder-no-fix") }}
+                        </div>
+                    </div>
+                </div>
+                {{ render_field(form.email_1) }}
+                <div class="form-group row mb-3" data-kt-password-meter="true">
+                    <label for="{{ form.password.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.password) }}
+                    </label>
+                    <div class="col-md-9">
+                        {{ render_simple_field(form.password, autocomplete="new-password") }}
+                        {% if form.id.data %}
+                            <small>Leave blank to retain old password</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="form-group row mb-3">
+                    <label for="{{ form.billing_id.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.billing_id) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ render_simple_field(form.billing_id, type="select")}}
+                    </div>
+                    <label for="{{ form.active.name }}" class="col-md-2 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.active) }}
+                    </label>
+                    <div class="col-md-4">
+                        {{ render_simple_field(form.active, type="radio") }}
+                    </div>
+                </div>
+                <div class="form-group row mb-3">
+                    <label for="{{ form.warning_level.name }}" class="col-md-3 text-right col-form-label font-weight-bolder ">
+                        {{ render_label(form.warning_level) }}
+                    </label>
+                    <div class="col-md-3">
+                        {{ render_simple_field(form.warning_level)}}
+                    </div>
+                </div>
+                {{ render_field(form.warning_email) }}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-sm btn-primary font-weight-bold" id="save-account">Save changes</button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+
+     var extraButtons;
+     var validation;
+     var target = document.querySelector("#ajax-modal");
+     var blockModal;
+
+     blockModal = KTBlockUI.getInstance(target);
+
+     if (!blockModal) {
+         blockModal = new KTBlockUI(target);
+     }
+
+     var _handleAccountActions = function() {
+         // Init form validation rules. For more info check the FormValidation plugin's official documentation:https://formvalidation.io/
+         validation = FormValidation.formValidation(
+             document.querySelector('#accountForm'),
+             {
+                 fields: {
+                     first_name: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'First Name is required'
+                             },
+                         }
+                     },
+                     last_name: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Last Name is required'
+                             },
+                         }
+                     },
+                     country_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a country'
+                             },
+                         }
+                     },
+                     billing_id: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please select a billing plan'
+                             },
+                         }
+                     },
+                     username: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Username is required'
+                             },
+                         }
+                     },
+                     email_1: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Registration Number is required'
+                             },
+                             emailAddress: {
+                                 message: 'The value is not a valid email address'
+                             }
+                         }
+                     },
+                     dob: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter the date of birth'
+                             },
+                         }
+                     },
+                     msisdn_1: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Telephone is required'
+                             },
+                             checkPhone: {
+                                 message: "The phone number is not valid for the selected country"
+                             }
+                         }
+                     },
+                     {% if not form.id.data %}
+                     password: {
+                         validators: {
+                             notEmpty: {
+                                 message: 'Please enter a password'
+                             },
+                         }
+                     },
+                     {% endif %}
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     // defaultSubmit: new FormValidation.plugins.DefaultSubmit(), // Uncomment this line to enable normal button submit after form validation
+                     bootstrap: new FormValidation.plugins.Bootstrap5()
+                 }
+             }
+         ).on('core.form.valid', function () {
+             blockModal.block();
+
+             var data = $("#accountForm").serialize();
+
+             $.post("{{ url_for('accounts.individualEdit') }}", data, function(r, s) {
+                 blockModal.release();
+                 if (r.success) {
+                     swal.fire({
+                         text: "Successfully saved account",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     $("#account-reset").trigger("click");
+                     $('#ajax-modal').modal('hide')
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+     }
+
+     // Class Definition
+     var Account = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleAccountActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         $("#country_id").on("change", function() {
+             console.log('{{ form.country_id.data }}');
+             var r = $(this).children("option:selected").data("calling-code");
+             console.log(r);
+             $("#country_code").text("+"+r);
+         });
+         $("#active-{{form.active.data}}").click();
+         $("#country_id").trigger("change");
+
+         $('#dob').daterangepicker({
+             singleDatePicker: true,
+             showDropdowns: true,
+             autoApply: true,
+             minYear: 1950,
+             maxYear: parseInt(moment().subtract(18, 'year').format("YYYY")),
+             {% if form.dob.data %}
+             startDate: "{{ form.dob.data }}",
+             {% else %}
+             startDate: moment().subtract(18, 'year').format("YYYY-MM-DD"),
+             {% endif %}
+             maxDate: moment().subtract(18, 'year').format("YYYY-MM-DD"),
+             locale: {
+                 format: 'YYYY-MM-DD'
+             }
+         });
+         Account.init();
+     });
+    </script>
+{% endblock %}

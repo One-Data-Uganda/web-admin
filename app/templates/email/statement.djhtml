@@ -1,0 +1,24 @@
+<html>
+    <body>
+        <p>Dear {{ name }},</p>
+        <p>
+            You recently requested a copy of your statement using the Uganda Securities Exchange Easy Portal Platform.
+        </p>
+        <p></p>
+        <p>
+            Please find your statement for the dates requested attached to this email in Adobe Acrobat PDF format
+        </p>
+        <p>
+            If you have any queries, please contact us:
+            <ul>
+                <li>By telephone: {{ company.tel }}</li>
+                <li>By email: <a href="mailto:{{ company.email }}">{{ company.email }}</a></li>
+                <li>By visiting our offices at {{ company.address}}</li>
+            </ul>
+        </p>
+        <p>
+            Regards,<br>
+            USE Easy Portal
+        </p>
+    </body>
+</html>

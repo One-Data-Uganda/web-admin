@@ -1,0 +1,240 @@
+{% extends "layout_modal.djhtml" %}
+{% from "fields.djhtml" import render_field, render_label, render_simple_field %}
+
+{% block content %}
+    <form id="keywordForm">
+        <div class="modal-header">
+            <h5 class="modal-title" id="keywordModalLabel">Add/Edit Keyword</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-body">
+                {{ form.csrf_token() }}
+                {{ form.id }}
+                <div class="form-body">
+                    {% if form.id.data %}
+                        {{ render_field(form.is_company, type="select", readonly=True) }}
+                        {{ render_field(form.account_id, type="select", readonly=True) }}
+                    {% else %}
+                        {{ render_field(form.is_company, type="select") }}
+                        {{ render_field(form.account_id, type="select") }}
+                    {% endif %}
+                    {{ render_field(form.keyword) }}
+                    {{ render_field(form.keyword_type, type="select") }}
+                    {{ render_field(form.alias_id, type="select", extraDivClass="choice") }}
+                    {{ render_field(form.list_id, type="select", extraDivClass="choice") }}
+                    {{ render_field(form.text, extraDivClass="choice") }}
+                    <div class="form-group row mb-3 choice" id="{{ form.url.name}}_Div">
+                        <label for="{{ form.url.name }}" class="col-md-3 col-form-label font-weight-bolder ">
+                            {{ render_label(form.url) }}{% if form.url.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        <div class="col-md-9">
+                            {{ render_simple_field(form.url, readonly=readonly) }}
+                            <small>Use special variables "%P" for the recipient number, "%p" for the sender and "%a" for the message text</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-danger font-weight-bold" data-bs-dismiss="modal">Close</button>
+            {{ form.save_btn(class="btn btn-sm btn-primary font-weight-bold") }}
+        </div>
+    </form>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script>
+     "use strict";
+     var target = document.querySelector('#ajax-modal');
+
+     var blockUI;
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+
+     var _handleKeywordActions = function() {
+         var validation = FormValidation.formValidation(
+             document.querySelector('#keywordForm'),
+             {
+                 fields: {
+                     keyword: {
+                         validators: {
+                             notEmpty: {
+                                 message: "Please enter a keyword name",
+                             },
+                             stringLength: {
+                                 min: 2,
+                                 max: 11,
+                                 message: 'The keyword must be between 2 and 11 characters',
+                             },
+                             regexp: {
+                                 regexp: /^[a-zA-Z][a-zA-Z0-9]+$/i,
+                                 message: 'The keyword must consist of alphabetical characters starting with a letter',
+                             },
+                             remote: {
+                                 message: "This keyword is already in use",
+                                 url: '{{ url_for("base.check_keyword") }}',
+                                 data: function() {
+                                     return {
+                                         id: "{{ form.id.data }}",
+                                         account_id: $("#account_id").val()
+                                     }
+                                 }
+                             }
+                         }
+                     },
+                     text: {
+                         validators: {
+                             callback: {
+                                 message: 'Please enter text',
+                                 callback: function(input) {
+                                     return input.value.length != 0 || $("#keyword_type").val() != "TEXT";
+                                 }
+                             },
+                         }
+                     },
+                     url: {
+                         validators: {
+                             callback: {
+                                 message: 'Please enter a URL',
+                                 callback: function(input) {
+                                     return input.value.length != 0 || $("#keyword_type").val() != "URL";
+                                 }
+                             },
+                         }
+                     },
+                     alias_id: {
+                         validators: {
+                             callback: {
+                                 message: 'Please select a keyword',
+                                 callback: function(input) {
+                                     return input.value != 0 || $("#keyword_type").val() != "ALIAS";
+                                 }
+                             },
+                         }
+                     },
+                     list_id: {
+                         validators: {
+                             callback: {
+                                 message: 'Please select a list',
+                                 callback: function(input) {
+                                     return input.value != 0 || $("#keyword_type").val() != "LIST";
+                                 }
+                             },
+                         }
+                     },
+                 },
+                 plugins: {
+                     trigger: new FormValidation.plugins.Trigger(),
+                     submitButton: new FormValidation.plugins.SubmitButton(),
+                     bootstrap: new FormValidation.plugins.Bootstrap5(),
+                 }
+             }
+         ).on('core.form.valid', function () {
+             // Find disabled inputs, and remove the "disabled" attribute
+             var disabled = $("#keywordForm").find(':disabled').removeAttr('disabled');
+
+             // serialize the form
+             var data = $("#keywordForm").serialize();
+
+             // re-disabled the set of inputs that you previously enabled
+             disabled.attr('disabled','disabled');
+             $.post("{{ url_for('.keywordEdit') }}", data, function(r, s) {
+                 blockUI.release();
+                 if (r.success) {
+                     swal.fire({
+                         text: "Successfully saved keyword",
+                         icon: "success",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                     table.ajax.reload();
+                     $('#ajax-modal').modal('hide')
+                 } else {
+                     swal.fire({
+                         text: r.message,
+                         icon: "error",
+                         buttonsStyling: false,
+                         confirmButtonText: "Ok",
+                         customClass: {
+                             confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                         }
+                     });
+                 }
+             });
+         });
+         $("#keyword_type").on("change", function(){
+             validation.revalidateField('text');
+             validation.revalidateField('url');
+             validation.revalidateField('alias_id');
+             validation.revalidateField('list_id');
+         });
+         $("#account_id").on("change", function(){
+             validation.revalidateField('keyword');
+         });
+
+     }
+
+     // Class Definition
+     var Keyword = function() {
+         // Public Functions
+         return {
+             // public functions
+             init: function() {
+                 _handleKeywordActions();
+             }
+         };
+     }();
+
+     $(document).ready(function(){
+         Keyword.init();
+         {% if form.id.data %}
+         // Ignore
+         {% else %}
+         $("#account_id").chained("#is_company");
+         {% endif %}
+         $("#alias_id").chained("#account_id");
+         $("#list_id").chained("#account_id");
+
+         {% if form.is_company.data in ["True", "False"] %}
+         $("#is_company").val('{{form.is_company.data}}').change();{% endif %}
+
+         {% if form.account_id.data %}
+         $("#account_id").val('{{form.account_id.data}}').change();{% endif %}
+
+         $("#alias_id_Div").hide();
+         $("#list_id_Div").hide();
+         $("#url_Div").hide();
+
+         $("#keyword_type").on("change", function(){
+             var r = $(this).val();
+
+             if (r == "LIST") {
+                 $(".choice").hide();
+                 $("#list_id_Div").show();
+             } else if (r == "ALIAS") {
+                 $(".choice").hide();
+                 $("#alias_id_Div").show();
+             } else if (r == "URL") {
+                 $(".choice").hide();
+                 $("#url_Div").show();
+             } else if (r == "TEXT") {
+                 $(".choice").hide();
+                 $("#text_Div").show();
+             }
+
+         });
+
+         $("#keyword_type").trigger("change");
+
+     });
+    </script>
+{% endblock %}

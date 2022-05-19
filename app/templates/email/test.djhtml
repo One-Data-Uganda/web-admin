@@ -1,0 +1,7 @@
+<html>
+    <body>
+        <p>
+            This is a test email from the {{ settings("GLOBAL_COMPANY_NAME") }} SMS Gateway.
+        </p>
+    </body>
+</html>

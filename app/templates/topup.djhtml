@@ -1,0 +1,387 @@
+{% set title = "Topup Management" %}
+{% extends "layout.djhtml" %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="topupCard">
+                <div class="card-header">
+                    <div class="card-title fw-bold">
+                        <h3 class="card-label">TOPUP MANAGEMENT</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="#" data-url="{{ url_for('base.topupAdd') }}" type="button" class="btn btn-sm btn-primary ajax-modal" data-toggle="modal">
+                            <i class="fas fa-plus-circle"></i> Add New Topup
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <button class="btn-close" data-close="alert"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <table id="topupTable" class="table table-darker table-bordered table-striped table-row-bordered gy-2 gs-2"></table>
+                </div>
+            </div>
+            <!--end::Card-->
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables-render.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     var blockUI;
+     var target = document.querySelector('#topupCard');
+
+     blockUI = KTBlockUI.getInstance(target);
+
+     if (!blockUI) {
+         blockUI = new KTBlockUI(target);
+     }
+     var TopupTable = function() {
+         var table;
+
+         var reloadTable = function() {
+             table.ajax.reload();
+         }
+
+         $.fn.dataTable.Api.register('column().title()', function() {
+             return $(this.header()).text().trim();
+         });
+
+         var initTable = function() {
+             table = $("#topupTable").DataTable({
+                 "responsive": true,
+                 "searchDelay": 700,
+                 "serverSide": true,
+                 "processing": true,
+                 language: datatablesLanguage,
+
+                 "columnDefs": [
+                     {
+                         targets: 1,
+                         render: function(data, type, row) {
+                             return row.account_name;
+                         }
+                     },
+                     {
+                         targets: 6,
+                         orderable: false,
+                         render: function(data, type, row) {
+                             if ( row.topup_state != 2 && ( row.topup_status == "processed" || row.topup_status == "successful")) {
+                                 var x = `<button class="btn btn-sm btn-danger" onclick="reverseTopup(`+data+`)">
+                                      <i class="fa fa-undo"></i> Reverse
+                                  </button>`;
+                                 return x;
+                             }
+                             return "";
+                         }
+                     }
+                 ],
+                 "order": [
+                     [0, 'desc']
+                 ],
+
+                 //set the initial value
+                 "ajax": {
+                     "url": "{{ url_for('base.topupJSON') }}", // ajax source
+                     "type": "POST"
+                 },
+                 "columns": [
+                     { "data": "topdate",
+                       "title": "Date & Time", "type": "date",
+                       width: 200,
+                       render: $.fn.dataTable.render.moment( 'YYYY-MM-DDTHH:mm:ss.SSSSSS', 'YYYY-MM-DD hh:mm:ss A') },
+                     { "data": "account_id", "title": "Account", width: 200,
+                       render: function (v, t, r){
+                           return r['account'];
+                       }
+                     },
+                     { "data": "topup_type_id", "title": "Topup Type", width: 200,
+                       render: function (v, t, r) {
+                           return r['topup_type'];
+                       }
+                     },
+                     { "data": "credits", "title": "Credits",
+                       "class": "text-end", width: 150,
+                       render: $.fn.dataTable.render.number( ',', '.', 0 ) },
+                     { "data": "topup_status", "title": "Status",
+                       width: 80,
+                       class: "text-center",
+                       render: function (v) {
+                           var _class = "secondary";
+                           if (v == "pending") {
+                               _class = "warning";
+                           } else if (v == "successful") {
+                               _class = "success";
+                           } else if (v == "failed") {
+                               _class = "danger";
+                           } else if (v == "reversed") {
+                               _class = "info";
+                           } else if (v == "completed") {
+                               _class = "primary";
+                           }
+
+                           return `<label class="badge badge-sm badge-` + _class +`">`+v+`</label>`;
+                       }
+                     },
+                     { "data": "message", "title": "Notes" },
+                     { "data": "id", "title": "Actions", width: 150 },
+                 ],
+                 dom: datatablesDom,
+                 initComplete: function() {
+                     var thisTable = this;
+                     var rowFilter = $('<tr class="filter align-top"></tr>').appendTo($(table.table().header()));
+
+                     this.api().columns().every(function() {
+                         var column = this;
+                         var input;
+
+                         switch (column.title()) {
+                             case 'Date & Time':
+                                 input = $(`
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="From" id="date_from"
+                                     data-col-index="`
+                                         + column.index()
+                                         + `"><span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control form-control-sm date datatable-input" readonly placeholder="To" id="date_to"
+                                     data-col-index="` + column.index() + `"/>
+                                        <span class="input-group-text"><i class="la la-calendar-o glyphicon-th"></i></span>
+                                </div>`);
+                                 break;
+                             case 'Message': case 'Notes':
+                                 input = $(`<input type="text" class="form-control form-control-sm form-filter datatable-input" data-col-index="` + column.index() + `"/>`);
+                                 break;
+
+                             case 'Account':
+                                 input = $(`<select id="filter_is_company" name="filter_is_company" class="form-select form-select-sm mb-2" title="Company">
+                                 <option value="">[ALL]</option>
+                                 <option value="company-True">Company</option>
+                                 <option value="company-False">Individual</option>
+                                 </select>
+
+                                 <select id="filter_account" name="filter_account" class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                 <option value="">Select</option>
+                                     {% for account in accounts %}
+                                 <option data-chained="company-{{ account.kyc.is_company }}" value="{{ account.id }}">
+                                     {%if account.kyc.is_company %}
+                                         {{ account.kyc.business_name }}
+                                     {% else %}
+                                         {{ account.kyc.first_name }} {{ account.kyc.last_name }}
+                                     {% endif %}
+                                     </option>{% endfor %}
+                                 </select>`);
+                                 break;
+
+                             case 'Topup Type':
+                                 input = $(`<select class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                           <option value="">[ALL]</option>
+                                             {% for t in topup_types %}
+                                           <option value="{{ t.id }}">{{ t.name }}</option>
+                                            {% endfor %}
+                                 </select>`);
+                                 break;
+                             case 'Status':
+                                 input = $(`<select class="form-select form-select-sm form-filter datatable-input" title="Select" data-col-index="` + column.index() + `">
+                                     <option value="">[ALL]</option>
+                                     <option value="pending">Pending</option>
+                                     <option value="successful">Succesful</option>
+                                     <option value="failed">Failed</option>
+                                     <option value="reversed">Reversed</option>
+                                     <option value="completed">Completed</option>
+                                     </select>
+                                     `);
+                                 break;
+
+                             case 'Actions':
+                                 var search = $(`
+                                 <button class="btn btn-sm btn-primary mb-2 d-block w-100">
+                                     <span>
+                                         <i class="la la-search"></i>
+                                         <span>Search</span>
+                                     </span>
+                                 </button>`);
+
+                                 var reset = $(`
+                                 <button id="mt-reset" class="btn btn-sm btn-danger d-block w-100">
+                                     <span>
+                                        <i class="la la-close"></i>
+                                        <span>Reset</span>
+                                     </span>
+                                 </button>`);
+
+                                 $('<th>').append(search).append(reset).appendTo(rowFilter);
+
+                                 $(".datatable-input" ).on( "keydown", function(event) {
+                                     if(event.which == 13) {
+                                         $(search).click();
+                                     }
+                                 });
+
+                                 $(search).on('click', function(e) {
+                                     e.preventDefault();
+                                     var params = {};
+                                     $(rowFilter).find('.datatable-input').each(function() {
+                                         var i = $(this).data('col-index');
+                                         if (params[i]) {
+                                             params[i] += '|' + $(this).val();
+                                         } else {
+                                             params[i] = $(this).val();
+                                         }
+                                     });
+                                     $.each(params, function(i, val) {
+                                         // apply search params to datatable
+                                         table.column(i).search(val ? val : '', false, false);
+                                     });
+                                     table.table().draw();
+                                 });
+
+
+                                 $('#date_from').daterangepicker({
+                                     singleDatePicker: true,
+                                     showDropdowns: true,
+                                     minYear: 2019,
+                                     startDate: moment().subtract(7, 'day').format("YYYY-MM-DD"),
+                                     maxDate: moment().format("YYYY-MM-DD"),
+                                     autoApply: true,
+                                     autoUpdateInput: true,
+                                     locale: {
+                                         format: 'YYYY-MM-DD'
+                                     }
+                                 });
+
+                                 $('#date_to').daterangepicker({
+                                     singleDatePicker: true,
+                                     showDropdowns: true,
+                                     maxDate: moment().format("YYYY-MM-DD"),
+                                     minYear: 2019,
+                                     autoApply: true,
+                                     autoUpdateInput: true,
+                                     locale: {
+                                         format: 'YYYY-MM-DD'
+                                     }
+                                 });
+
+                                 $(reset).on('click', function(e) {
+                                     e.preventDefault();
+                                     $(rowFilter).find('.datatable-input').each(function(i) {
+                                         $(this).val('');
+                                         table.column($(this).data('col-index')).search('', false, false);
+                                     });
+                                     $(rowFilter).find('.date').each(function(i) {
+                                         $(this).val(moment().format("YYYY-MM-DD"));
+                                         table.column($(this).data('col-index')).search('', false, false);
+                                     });
+                                     table.table().draw();
+                                 });
+                                 break;
+                         }
+
+                         if (column.title() !== 'Actions') {
+                             $(input).appendTo($('<th>').appendTo(rowFilter));
+                         }
+                     });
+
+                     // hide search column for responsive table
+                     var hideSearchColumnResponsive = function() {
+                         thisTable.api().columns().every(function() {
+                             var column = this
+                             if (column.responsiveHidden()) {
+                                 $(rowFilter).find('th').eq(column.index()).show();
+                             } else {
+                                 $(rowFilter).find('th').eq(column.index()).hide();
+                             }
+                         })
+                     };
+
+                     // init on datatable load
+                     hideSearchColumnResponsive();
+                     // recheck on window resize
+                     window.onresize = hideSearchColumnResponsive;
+
+                     $("#filter_account").chained("#filter_is_company");
+
+                     $('.date').daterangepicker({
+                         singleDatePicker: true,
+                         showDropdowns: true,
+                         minYear: 2019,
+                         maxYear: parseInt(moment().format("YYYY")),
+                         autoApply: true,
+                         autoUpdateInput: true,
+                         locale: {
+                             format: 'YYYY-MM-DD'
+                         }
+                     });
+
+                 },
+
+             });
+         };
+
+         return {
+             //main function to initiate the module
+             init: function() {
+                 initTable();
+             },
+             reload: function() {
+                 reloadTable();
+             },
+
+         };
+     }();
+
+
+     function reverseTopup(id) {
+         bootbox.confirm("Are you sure you want to reverse this topup? This will impact client balances.", function(result) {
+             if (result) {
+                 blockUI.block();
+
+                 $.post("{{ url_for('base.topupReverse') }}", "id="+id, function(r){
+                     blockUI.release();
+                     if (r.success) {
+                         swal.fire({
+                             text: "Topup Reversed",
+                             icon: "success",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         }).then(function(){
+                             TopupTable.reload();
+                         });
+                     } else {
+                         swal.fire({
+                             text: r.message,
+                             icon: "error",
+                             buttonsStyling: false,
+                             confirmButtonText: "Ok",
+                             customClass: {
+                                 confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                             }
+                         });
+                     }
+                 });
+             }
+         });
+     }
+
+     $(document).ready(function(){
+         TopupTable.init();
+     });
+    </script>
+{% endblock %}

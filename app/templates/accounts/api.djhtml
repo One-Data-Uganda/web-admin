@@ -1,0 +1,162 @@
+{% set title = "Manage API Keys" %}
+{% extends "layout.djhtml" %}
+{% if account.kyc.is_company %}
+    {% set url_return = url_for('accounts.business') %}
+{% else %}
+    {% set url_return = url_for('accounts.individuals') %}
+{% endif %}
+
+{% block additionalstyles %}
+    <link href="{{url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-xl-12">
+            <!--begin::Card-->
+            <div class="card shadow-sm card-custom gutter-b card-stretch" id="apiCard">
+                <div class="card-header">
+                    <div class="card-title fw-bold">
+                        <h3 class="card-label">Manage API Keys for {{ account.kyc.name }}</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <a href="{{ url_return }}" class="btn btn-sm btn-danger me-2">
+                            <i class="fa fa-undo"></i>
+                            Return
+                        </a>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="newAPI()">
+                            <i class="fas fa-plus-circle"></i> Generate New API Key
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table id="apiTable" class="table table-darker table-bordered table-striped table-row-bordered gy-2 gs-2" >
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>API Key</th>
+                                <th>API Secret</th>
+                                <th>State</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for apikey in apikeys %}
+                                <tr>
+                                    <td>
+                                        {{ apikey.name }}
+                                    </td>
+                                    <td>
+                                        {{ apikey.id }}
+                                    </td>
+                                    <td>
+                                        {{ apikey.secret }}
+                                    </td>
+                                    <td>
+                                        {% if apikey.active %}
+                                            <label class="label label-success label-inline label-lg">Active</label>
+                                        {% else  %}
+                                            <label class="label label-danger label-inline label-lg">Inactive</label>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if apikey.active %}
+                                            <button onclick="disableAPI('{{ apikey.id }}')" class="btn btn-sm btn-danger btn-sm">
+                                                Disable
+                                            </button>
+                                        {% else %}
+                                            <button onclick="enableAPI('{{ apikey.id }}')" class="btn btn-sm btn-primary btn-sm">
+                                                Enable
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!--end::Card-->
+        </div>
+    </div>
+{% endblock %}
+
+{% block additionalscripts %}
+    <script src="{{ url_for('static', filename='assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables-export.js', v=1) }}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='plugins/bootbox/bootbox.min.js') }}" type="text/javascript"></script>
+    <script>
+     "use strict";
+     var disableAPI = function(id) {
+         $.post("{{ url_for('accounts.api', action='disable')}}", "id="+id, function(r){
+             if (r.success) {
+                 $("#apiCard").load("{{ url_for('accounts.editApiKeys', id=account.id) }} #apiCard");
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         })
+     }
+
+     var enableAPI = function(id) {
+         $.post("{{ url_for('accounts.api', action='enable')}}", "id="+id, function(r){
+             if (r.success) {
+                 $("#apiCard").load("{{ url_for('accounts.editApiKeys', id=account.id) }} #apiCard");
+             } else {
+                 swal.fire({
+                     text: r.message,
+                     icon: "error",
+                     buttonsStyling: false,
+                     confirmButtonText: "Ok",
+                     customClass: {
+                         confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                     }
+                 });
+
+             }
+         })
+     }
+
+     var newAPI = function() {
+         bootbox.prompt({
+             title: "Please enter the name of the new API Key",
+             inputType: "text",
+             required: true,
+             callback: function(d){
+                 if(d) {
+                     var data = {
+                         account_id: '{{ account.id }}',
+                         name: d
+                     };
+
+                     $.post("{{ url_for('accounts.api', action='new' )}}", data, function(r) {
+                         if(r.success) {
+                             $("#apiCard").load("{{ url_for('accounts.editApiKeys', id=account.id) }} #apiCard");
+                         } else {
+                             swal.fire({
+                                 text: r.message,
+                                 icon: "error",
+                                 buttonsStyling: false,
+                                 confirmButtonText: "Ok",
+                                 customClass: {
+                                     confirmButton: "btn btn-sm font-weight-bold btn-light-primary"
+                                 }
+                             });
+
+                         }
+                     });
+
+                 }
+             }
+         });
+
+     }
+    </script>
+{% endblock %}
