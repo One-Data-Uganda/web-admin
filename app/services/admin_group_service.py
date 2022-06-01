@@ -21,7 +21,9 @@ async def add(name: str, roles: list):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def update(id, name: str, roles: list):
@@ -35,7 +37,9 @@ async def update(id, name: str, roles: list):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def get(id):
@@ -47,7 +51,9 @@ async def get(id):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def delete(id):
@@ -59,7 +65,9 @@ async def delete(id):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def list():
@@ -72,4 +80,6 @@ async def list():
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )

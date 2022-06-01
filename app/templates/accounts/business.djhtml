@@ -14,10 +14,6 @@
                         <h3 class="card-label">{{ title }}</h3>
                     </div>
                     <div class="card-toolbar">
-                        <button type="button" onclick="refreshBalances()" class="btn btn-sm btn-info me-2">
-                            <i class="fas fa-undo"></i> Refresh Account Balances
-                        </button>
-                        |
                         <a href="#" data-url="{{ url_for('.businessEdit') }}" data-size="modal-lg" type="button" class="btn btn-sm btn-primary ajax-modal ms-2" data-toggle="modal">
                             <i class="fas fa-plus-circle"></i> Add New Account
                         </a>
@@ -147,7 +143,6 @@
                        }
                      },
                      { "data": "count_user", "title": "Users" },
-                     { "data": "count_api", "title": "API Keys" },
                      { "data": "id", "title": "Actions",
                        width: 50,
                          orderable: false,
@@ -165,27 +160,9 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="{{ url_for('.editKYC')}}/`+ row['kyc_id'] +`" class="dropdown-item">
-                                                <span class="navi-icon"><i class="la la-user-edit"></i></span>
-                                                <span class="navi-text">Manage KYC</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ url_for('.groups')}}/`+ data +`" class="dropdown-item">
-                                                <span class="navi-icon"><i class="la la-user-edit"></i></span>
-                                                <span class="navi-text">Manage Groups</span>
-                                            </a>
-                                        </li>
-                                        <li>
                                             <a href="{{ url_for('.editUsers')}}/`+ data +`" class="dropdown-item">
                                                 <span class="navi-icon"><i class="la la-user-edit"></i></span>
                                                 <span class="navi-text">Manage Users</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ url_for('.editApiKeys')}}/`+ data +`#" class="dropdown-item">
-                                                <span class="navi-icon"><i class="la la-key"></i></span>
-                                                <span class="navi-text">Manage API Keys</span>
                                             </a>
                                         </li>`;
                              if (row.active) {

@@ -24,10 +24,8 @@ from app.core.config import settings
 from app.core.logger import log
 from app.services import (
     account_service,
-    accounting_service,
     admin_group_service,
     admin_service,
-    api_service,
     document_type_service,
     group_service,
     information_service,
@@ -175,11 +173,9 @@ async def businessJSON():
 async def business():
     """Business Accounts"""
     countries = await information_service.country_list()
-    billing_plans = await accounting_service.billing_list()
     return render_template(
         "accounts/business.djhtml",
         countries=countries.data,
-        billing_plans=billing_plans.data,
     )
 
 
@@ -291,11 +287,10 @@ async def individualsJSON():
 async def individuals():
     """Individual Individuals"""
     countries = await information_service.country_list()
-    billing_plans = await accounting_service.billing_list()
+
     return render_template(
         "accounts/individual.djhtml",
         countries=countries.data,
-        billing_plans=billing_plans.data,
     )
 
 
@@ -733,47 +728,6 @@ async def userChange(account_id: UUID):
     return render_template(
         "accounts/user_edit.djhtml", form=form, id=account_id, kyc_id=kyc_id
     )
-
-
-@accounts_bp.route("/api", methods=["GET", "POST"])
-@accounts_bp.route("/api/<string:id>", methods=["GET", "POST"])
-@admin_required()
-async def editApiKeys(id=None):
-    """Edit API Keys"""
-    account = await account_service.get(id)
-    apikeys = await api_service.list(id)
-
-    log.debug(apikeys)
-
-    return render_template(
-        "accounts/api.djhtml", account=account.data, apikeys=apikeys.data
-    )
-
-
-@accounts_bp.route("/api-action/<string:action>", methods=["POST"])
-@admin_required()
-async def api(action):
-    """Edit API Keys"""
-    id = request.values.get("id")
-
-    r = None
-    try:
-        if action == "disable":
-            r = await api_service.disable(id)
-        elif action == "enable":
-            r = await api_service.enable(id)
-        elif action == "new":
-            r = await api_service.add(
-                account_id=request.values.get("account_id"),
-                name=request.values.get("name"),
-            )
-    except Exception as e:
-        log.error(e)
-
-    if r:
-        return r.dict()
-
-    return {"success": False, "message": "Invalid action specified"}
 
 
 @accounts_bp.route("/group")

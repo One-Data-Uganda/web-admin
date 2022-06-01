@@ -35,23 +35,13 @@ from app.core.config import settings
 from app.core.logger import log
 from app.models import User
 from app.services import (
-    account_service,
-    accounting_service,
     admin_preference_service,
     admin_service,
-    api_service,
-    billing_service,
-    information_service,
-    keyword_service,
-    network_service,
-    report_service,
-    setting_service,
-    shortcode_service,
-    sms_service,
     user_service,
+    setting_service,
 )
 from app.services.api.user import models
-from app.utils import Struct, admin_required, choices, getIP, getSetting, validateMSISDN
+from app.utils import admin_required, getIP, getSetting, validateMSISDN
 from app.utils.email import ts, user_activate, user_password_reset
 from app.utils.ext_fields import AttribSelectField
 from app.utils.utils import login_required, url_for
@@ -360,26 +350,10 @@ async def index():
 @base_bp.route("/dashboard")
 @login_required()
 async def dashboard():
-    log.debug(current_user.__dict__)
     """Admin dashboard."""
     try:
-        accounts = await account_service.list()
-        networks = await network_service.list()
-        log.debug(networks)
-        shortcodes = await shortcode_service.list()
-
-        rows = redisConn.hgetall("networkbilling")
-
-        networkbilling = [
-            (f"networkbilling-{k}", json.loads(v)) for k, v in rows.items()
-        ]
-
         return render_template(
             "dashboard.djhtml",
-            networks=networks.data,
-            accounts=accounts.data,
-            shortcodes=shortcodes.data,
-            networkbilling=dict(networkbilling),
         )
     except Exception as e:
         log.error(e, exc_info=True)
@@ -517,269 +491,6 @@ async def reset_password_token(token):
 @base_bp.route("/password")
 async def changePassword():
     return render_template("change_password.djhtml")
-
-
-@base_bp.route("/float")
-@admin_required()
-async def float():
-    """Admin float."""
-    try:
-        rows = await accounting_service.networkfloat_list()
-
-        floats = [f.dict() for f in rows.data]
-        for f in floats:
-            d = await admin_service.get(f["user_id"])
-            f["user"] = d.data
-
-        log.debug(floats)
-
-        return render_template("float.djhtml", floats=floats)
-    except Exception as e:
-        log.error(e)
-
-
-@base_bp.route("/float/<int:id>/edit", methods=["GET", "POST"])
-@admin_required()
-async def floatEdit(id):
-    """Edit Float"""
-    form = FloatForm()
-    form.id.data = id
-    form.network_id.choices = await choices.networks()
-
-    if form.validate_on_submit():
-        # Save form
-        if id > 0:
-            r = await accounting_service.networkfloat_update(
-                id,
-                form.fdate.data,
-                form.network_id.data,
-                form.amount.data,
-                form.notes.data,
-                current_user.id,
-            )
-        else:
-            r = await accounting_service.networkfloat_add(
-                form.fdate.data,
-                form.network_id.data,
-                form.amount.data,
-                form.notes.data,
-                current_user.id,
-            )
-
-        return r.dict()
-    elif request.method == "POST":
-        log.debug(form.errors)
-        return {"success": False, "message": "Failed to validate form"}
-
-    return render_template("float_edit.djhtml", form=form)
-
-
-@base_bp.route("/float/remove", methods=["POST"])
-@admin_required()
-async def floatRemove():
-    """Remove Float"""
-    id = request.values.get("id")
-    r = await accounting_service.networkfloat_delete(id)
-    return r.dict()
-
-
-@base_bp.route("/topup/json", methods=["POST"])
-@admin_required()
-async def topupJSON():
-    """List Topups"""
-    params = dict(request.values)
-    topups = await accounting_service.topup_list(params)
-    return topups
-
-
-@base_bp.route("/topup")
-@admin_required()
-async def topup():
-    """Admin topup."""
-    log.debug("******** MARK")
-    accounts = await account_service.list()
-    topup_types = await accounting_service.list_topup_types()
-    log.debug("******** MARK")
-    return render_template(
-        "topup.djhtml", accounts=accounts.data, topup_types=topup_types.data
-    )
-
-
-@base_bp.route("/topup/add", methods=["GET", "POST"])
-@admin_required()
-async def topupAdd():
-    """Edit Topup"""
-    form = TopupForm()
-    form.account_id.choices = await choices.accounts_chained()
-    form.topup_type_id.choices = await choices.topup_types()
-
-    log.debug(form.credits.data)
-    if form.validate_on_submit():
-        # Save form
-        r = await accounting_service.topup_add(
-            account_id=form.account_id.data,
-            topup_type_id=form.topup_type_id.data,
-            credits=form.credits.data,
-            notes=form.notes.data,
-            user_id=current_user.id,
-        )
-        log.debug(r)
-        return r.dict()
-    elif request.method == "POST":
-        return {"success": False, "message": str(form.errors)}
-
-    accounts = await account_service.list()
-    return render_template("topup_edit.djhtml", form=form, accounts=accounts.data)
-
-
-@base_bp.route("/topup/reverse", methods=["POST"])
-@admin_required()
-async def topupReverse():
-    """Reverse Topup"""
-    id = request.values.get("id")
-    r = await accounting_service.topup_reverse(id)
-    return r.dict()
-
-
-@base_bp.route("/billing", methods=["POST"])
-@admin_required()
-async def billingAdd():
-    """Billing addition"""
-    r = await billing_service.add(request.values["name"])
-    return r.dict()
-
-
-@base_bp.route("/billing/delete", methods=["POST"])
-@admin_required()
-async def billingDelete():
-    """Billing deletion"""
-    r = await billing_service.delete(request.values.get("id"))
-    return r.dict()
-
-
-@base_bp.route("/billing")
-@admin_required()
-async def billing():
-    """Billing management"""
-    id = request.values.get("id", None)
-    billings = await billing_service.list()
-
-    billing = None
-    for r in billings.data:
-        if r.id == id:
-            billing = r
-
-    if not billing:
-        billing = billings.data[0]
-
-    billing = billing.dict()
-
-    for network in billing["networks"]:
-        if network["name"] != "OTHER":
-            c = await information_service.country(network["country_id"])
-            network["country"] = c.data.name
-            network["network_prefixes"] = ",".join(
-                [x["name"] for x in network["prefixes"]]
-            )
-        else:
-            network["country"] = "N/A"
-            network["network_prefixes"] = ""
-
-    return render_template(
-        "billing_plan.djhtml", current_billing=billing, billings=billings.data
-    )
-
-
-@base_bp.route("/billing/<string:billing_id>/change", methods=["POST"])
-@admin_required()
-async def networkCostChange(billing_id):
-    if request.values["action"] == "delete":
-        r = await billing_service.network_delete(request.values["id"])
-        return r.dict()
-
-    return {"success": False, "message": "Invalid action specified"}
-
-
-@base_bp.route("/billing/<string:billing_id>/cost", methods=["POST", "GET"])
-@base_bp.route("/billing/<string:billing_id>/cost/<int:id>", methods=["POST", "GET"])
-@admin_required()
-async def networkCostEdit(billing_id, id=None):
-    form = NetworkCostForm()
-    form.billing_id.data = billing_id
-    form.country_id.choices = await choices.countries_simple()
-    form.network_id.choices = await choices.networks()
-
-    if request.method == "GET":
-        try:
-            if id:
-                row = await billing_service.network_get(id)
-                cost = row.data.dict()
-                form = NetworkCostForm(obj=Struct(**cost))
-                form.country_id.choices = await choices.countries_simple()
-                form.network_id.choices = await choices.networks()
-                form.prefixes.data = ",".join([x["name"] for x in cost["prefixes"]])
-
-            return render_template("billing_network_edit.djhtml", form=form)
-        except Exception as e:
-            log.error(e, exc_info=True)
-
-    if form.validate_on_submit():
-        if id:
-            # Save cost
-            r = await billing_service.network_update(
-                id,
-                name=form.name.data,
-                billing_id=form.billing_id.data,
-                country_id=form.country_id.data,
-                network_id=form.network_id.data,
-                prefixes=form.prefixes.data.split(","),
-                cost=form.cost.data,
-            )
-        else:
-            # Save cost
-            r = await billing_service.network_add(
-                name=form.name.data,
-                billing_id=form.billing_id.data,
-                country_id=form.country_id.data,
-                network_id=form.network_id.data,
-                prefixes=form.prefixes.data.split(","),
-                cost=form.cost.data,
-            )
-        return r.dict()
-    else:
-        return {"success": False, "message": form.errors}
-
-
-@base_bp.route("/graph/mo")
-@csrf.exempt
-async def moGraph():
-    params = dict(request.values)
-    r = await report_service.moGraph(params)
-    return r
-
-
-@base_bp.route("/graph/mt")
-@csrf.exempt
-async def mtGraph():
-    params = dict(request.values)
-    r = await report_service.mtGraph(params)
-    return r
-
-
-@base_bp.route("/graph/mt/json", methods=["POST"])
-@admin_required()
-async def mtJSON():
-    params = dict(request.values)
-    r = await report_service.mtJSON(params)
-    return r
-
-
-@base_bp.route("/graph/mo/json", methods=["POST"])
-@admin_required()
-async def moJSON():
-    params = dict(request.values)
-    r = await report_service.moJSON(params)
-    return r
 
 
 @base_bp.route("/email", methods=["POST", "GET"])
@@ -960,24 +671,6 @@ async def check_msisdn_user():
     return {"valid": True}
 
 
-@base_bp.route("/check-keyword")
-async def check_keyword():
-    keyword = request.values.get("keyword", None)
-    id = request.values.get("id", None)
-    account_id = request.values.get("account_id", None)
-
-    if not account_id:
-        account_id = None
-
-    r = await keyword_service.check(keyword, account_id)
-
-    log.debug(r)
-    if r.success and str(r.data.id) != id:
-        return {"valid": False}
-
-    return {"valid": True}
-
-
 @base_bp.route("/reset", methods=["POST", "GET"])
 async def reset():
     form = ResetForm()
@@ -1079,29 +772,5 @@ async def sendOTP():
                 "success": False,
                 "message": "This email address does not exist in the system",
             }
-    elif form.method.data == "msisdn":
-        u = await admin_service.check_msisdn(form.value.data)
-        if u.success and u.data:
-            code = await setCode(form.value.data, u.data)
-            api = await api_service.get(settings.APIKEY)
-            if not api.success:
-                return {
-                    "success": False,
-                    "message": "Cannot send OTPs a the moment. Please contact a system administrator",
-                }
-
-            user = {
-                "api_id": settings.APIKEY,
-                "account_id": api.data.account_id,
-                "ip": getIP(),
-            }
-            r = await sms_service.send(
-                user,
-                sender_id=getSetting("GLOBAL_SMS_SENDER"),
-                msisdn=form.value.data,
-                message=f"Your OTP for resetting your password on the {getSetting('GLOBAL_COMPANY_SHORTNAME')} SMS Gateway Admin Portal is {code}. This code expires in 5 minutes",
-            )
-
-            return {"success": True}
 
     return {"success": False, "message": "Unknown error. Please try again"}

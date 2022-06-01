@@ -49,9 +49,8 @@ class Settings(BaseSettings):
     KYC_FILE_PATH: str = "/data"
 
     USER_SERVICE: AnyHttpUrl = "http://user-service:5000"
-    REPORTING_SERVICE: AnyHttpUrl = "http://reporting-service:5000"
-    SMS_SERVICE: AnyHttpUrl = "http://sms-service:5000"
-    ACCOUNTING_SERVICE: AnyHttpUrl = "http://accounting-service:5000"
+    INFORMATION_SERVICE: AnyHttpUrl = "http://information-service:5000"
+    PROJECT_SERVICE: AnyHttpUrl = "http://project-service:5000"
     REPORTING_SERVICE: AnyHttpUrl = "http://reporting-service:5000"
 
     APIKEY: str = "A8321966-C40F-476D-9038-B6A559D8E0BB"

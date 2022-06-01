@@ -344,16 +344,12 @@ def create_app(config_type="dev"):
 
     from .views.base import base_bp
     from .views.modules.accounts import accounts_bp
-    from .views.modules.kannel import kannel_bp
     from .views.modules.reports import reports_bp
-    from .views.modules.sms import sms_bp
     from .views.modules.system import system_bp
 
     app.register_blueprint(base_bp, url_prefix="/")
-    app.register_blueprint(kannel_bp, url_prefix="/kannel")
-    app.register_blueprint(sms_bp, url_prefix="/sms")
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
-    app.register_blueprint(reports_bp, url_prefix="/report")
+    app.register_blueprint(reports_bp, url_prefix="/reports")
     app.register_blueprint(system_bp, url_prefix="/system")
 
     register_renderer(app, "renderer", MenuRenderer)

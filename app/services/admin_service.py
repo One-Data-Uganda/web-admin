@@ -25,7 +25,9 @@ async def find(username, email):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def admin_json(params: dict):
@@ -46,7 +48,9 @@ async def check_username(username):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def check_password(password):
@@ -59,7 +63,9 @@ async def check_password(password):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def check_msisdn(msisdn):
@@ -72,12 +78,14 @@ async def check_msisdn(msisdn):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def check_email(email):
     try:
-        body = models.EMAILModel(email=email)
+        body = models.EmailModel(email=email)
         r = await api.admin_api.check_admin_email(body)
         return r
     except UnexpectedResponse as e:
@@ -85,13 +93,15 @@ async def check_email(email):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
-async def login(username, password):
+async def login(method, value, password):
     r = None
     try:
-        body = models.AdminLogin(method="email", value=username, password=password)
+        body = models.AdminLogin(method=method, value=value, password=password)
         r = await api.admin_api.login_admin(body)
         return r
     except UnexpectedResponse as e:
@@ -99,7 +109,9 @@ async def login(username, password):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def add(
@@ -107,6 +119,7 @@ async def add(
     last_name: str,
     gender: str,
     dob: datetime.date,
+    country_id: str,
     msisdn: str,
     email: str,
     password: str,
@@ -120,6 +133,7 @@ async def add(
             last_name=last_name,
             gender=gender,
             dob=dob,
+            country_id=country_id,
             msisdn=msisdn,
             email=email,
             document_type_id=document_type_id,
@@ -136,7 +150,9 @@ async def add(
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def update(
@@ -147,7 +163,8 @@ async def update(
     dob: datetime.date,
     msisdn: str,
     email: str,
-    admin_group_id: int,
+    admin_group_id: int = None,
+    country_id: str = None,
     active: bool = None,
     password: str = None,
     document_type_id: int = None,
@@ -159,6 +176,7 @@ async def update(
             last_name=last_name,
             gender=gender,
             dob=dob,
+            country_id=country_id,
             msisdn=msisdn,
             email=email,
             document_type_id=document_type_id,
@@ -175,7 +193,9 @@ async def update(
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def set_password(id: uuid.UUID, password):
@@ -187,7 +207,9 @@ async def set_password(id: uuid.UUID, password):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def get(id: uuid.UUID):
@@ -199,7 +221,9 @@ async def get(id: uuid.UUID):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 def get_sync(id: uuid.UUID):
@@ -209,7 +233,7 @@ def get_sync(id: uuid.UUID):
         return r.json()
     except Exception as e:
         log.error(e, exc_info=True)
-        return {"success": False, "message": "System Error"}
+        return {"success": False, "message": "Internal Error. Please try again"}
 
 
 async def delete(id: uuid.UUID):
@@ -221,7 +245,9 @@ async def delete(id: uuid.UUID):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def disable(id: uuid.UUID):
@@ -233,7 +259,9 @@ async def disable(id: uuid.UUID):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )
 
 
 async def enable(id: uuid.UUID):
@@ -245,4 +273,6 @@ async def enable(id: uuid.UUID):
         return FailureResponseModel(success=False, message=x["message"])
     except Exception as e:
         log.error(e, exc_info=True)
-        return FailureResponseModel(success=False, message="System Error")
+        return FailureResponseModel(
+            success=False, message="Internal Error. Please try again"
+        )

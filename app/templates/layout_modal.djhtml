@@ -2,15 +2,9 @@
  .modal {
      position: fixed !important;
  }
- .table-sm>:not(caption)>*>* {
-     padding: 0.25rem 0.25rem !important;
- }
 </style>
-{% if modal_size is not defined %}
-    {% set modal_size = "modal-lg" %}
-{% endif %}
 {% block additionalstyles %}{% endblock %}
-<div class="modal-dialog {{ modal_size }}" role="document">
+<div class="modal-dialog {% if modal_size == "small" %}{% else %}modal-lg{% endif %}" role="document">
     <div class="modal-content">
         {% block content %}{% endblock %}
     </div>
